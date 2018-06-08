@@ -42,21 +42,20 @@ public class Crypt4GHInputStream extends SeekableStream {
         byte[] encryptedHeaderBytes = new byte[encryptedHeaderLength];
         encryptedStream.read(encryptedHeaderBytes);
         EncryptedHeader encryptedHeader = new EncryptedHeader(encryptedHeaderBytes, key, passphrase);
-        System.out.println("unencryptedHeader = " + unencryptedHeader);
-        System.out.println("encryptedHeader = " + encryptedHeader);
         if (encryptedHeader.getRecords().size() != 1) {
             throw new BadBlockException("Only files encrypted with one single record are supported at the moment.", new RuntimeException());
         }
 
         Record record = encryptedHeader.getRecords().iterator().next();
         dataStart = unencryptedHeader.getFullHeaderLength() + record.getCiphertextStart();
-        System.out.println("dataStart = " + dataStart);
         secretKeySpec = new SecretKeySpec(record.getKey(), 0, 32, record.getAlgorithm().getAlias().split("/")[0]);
         initialIV = Arrays.copyOf(record.getIv(), record.getIv().length);
         IvParameterSpec ivParameterSpec = new IvParameterSpec(initialIV);
         cipher = Cipher.getInstance(record.getAlgorithm().getAlias());
         cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
         blockSize = cipher.getBlockSize();
+
+        seek(0);
     }
 
     @Override
