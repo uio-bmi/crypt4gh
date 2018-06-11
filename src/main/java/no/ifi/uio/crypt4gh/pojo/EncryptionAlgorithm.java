@@ -12,6 +12,10 @@ public enum EncryptionAlgorithm {
         this.alias = alias;
     }
 
+    public int getCode() {
+        return code;
+    }
+
     public String getAlias() {
         return alias;
     }
