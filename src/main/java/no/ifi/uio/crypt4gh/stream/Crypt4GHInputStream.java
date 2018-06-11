@@ -1,9 +1,9 @@
-package no.ifi.uio.crypt4gh.streams;
+package no.ifi.uio.crypt4gh.stream;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
-import no.ifi.uio.crypt4gh.pojo.EncryptedHeader;
+import no.ifi.uio.crypt4gh.factory.HeaderFactory;
+import no.ifi.uio.crypt4gh.pojo.Header;
 import no.ifi.uio.crypt4gh.pojo.Record;
-import no.ifi.uio.crypt4gh.pojo.UnencryptedHeader;
 import org.bouncycastle.jcajce.provider.util.BadBlockException;
 import org.bouncycastle.openpgp.PGPException;
 
@@ -18,7 +18,6 @@ import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.Arrays;
 
 public class Crypt4GHInputStream extends SeekableStream {
@@ -30,30 +29,21 @@ public class Crypt4GHInputStream extends SeekableStream {
     private final Cipher cipher;
     private final int blockSize;
 
-    protected Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, PGPException, BadBlockException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException, InvalidKeyException {
-        encryptedStream = in;
-        encryptedStream.seek(0);
+    protected Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, PGPException, BadBlockException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+        this(in, HeaderFactory.getInstance().getHeader(in, key, passphrase));
+    }
 
-        int unencryptedHeaderLength = 16;
-        byte[] unencryptedHeaderBytes = new byte[unencryptedHeaderLength];
-        encryptedStream.read(unencryptedHeaderBytes);
-        UnencryptedHeader unencryptedHeader = new UnencryptedHeader(unencryptedHeaderBytes);
-        int encryptedHeaderLength = unencryptedHeader.getFullHeaderLength() - unencryptedHeaderLength;
-        byte[] encryptedHeaderBytes = new byte[encryptedHeaderLength];
-        encryptedStream.read(encryptedHeaderBytes);
-        EncryptedHeader encryptedHeader = new EncryptedHeader(encryptedHeaderBytes, key, passphrase);
-        if (encryptedHeader.getRecords().size() != 1) {
-            throw new BadBlockException("Only files encrypted with one single record are supported at the moment.", new RuntimeException());
-        }
+    protected Crypt4GHInputStream(SeekableStream in, Header header) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+        this.encryptedStream = in;
 
-        Record record = encryptedHeader.getRecords().iterator().next();
-        dataStart = unencryptedHeader.getFullHeaderLength() + record.getCiphertextStart();
-        secretKeySpec = new SecretKeySpec(record.getKey(), 0, 32, record.getAlgorithm().getAlias().split("/")[0]);
-        initialIV = Arrays.copyOf(record.getIv(), record.getIv().length);
-        IvParameterSpec ivParameterSpec = new IvParameterSpec(initialIV);
-        cipher = Cipher.getInstance(record.getAlgorithm().getAlias());
-        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
-        blockSize = cipher.getBlockSize();
+        Record record = header.getEncryptedHeader().getRecords().iterator().next();
+        this.dataStart = header.getDataStart();
+        this.secretKeySpec = new SecretKeySpec(record.getKey(), 0, 32, record.getAlgorithm().getAlias().split("/")[0]);
+        this.initialIV = Arrays.copyOf(record.getIv(), record.getIv().length);
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(this.initialIV);
+        this.cipher = Cipher.getInstance(record.getAlgorithm().getAlias());
+        this.cipher.init(Cipher.DECRYPT_MODE, this.secretKeySpec, ivParameterSpec);
+        this.blockSize = cipher.getBlockSize();
 
         seek(0);
     }
