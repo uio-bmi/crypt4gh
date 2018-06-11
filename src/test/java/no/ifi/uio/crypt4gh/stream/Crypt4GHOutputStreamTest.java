@@ -25,7 +25,7 @@ public class Crypt4GHOutputStreamTest {
     public void encrypt() throws Exception {
         byte[] rawFileBytes = FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource("sample.txt").getFile()));
         OutputStream outputStream = new FileOutputStream("output.enc");
-        Crypt4GHOutputStream crypt4GHOutputStream = new Crypt4GHOutputStream(outputStream, getKey(), getPassphrase());
+        Crypt4GHOutputStream crypt4GHOutputStream = new Crypt4GHOutputStream(outputStream, getKey());
         crypt4GHOutputStream.write(rawFileBytes);
         crypt4GHOutputStream.close();
 

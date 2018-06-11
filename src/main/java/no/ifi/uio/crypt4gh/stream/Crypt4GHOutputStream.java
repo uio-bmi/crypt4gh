@@ -4,6 +4,7 @@ import no.ifi.uio.crypt4gh.factory.HeaderFactory;
 import no.ifi.uio.crypt4gh.pojo.EncryptionAlgorithm;
 import org.bouncycastle.openpgp.PGPException;
 import org.c02e.jpgpj.Encryptor;
+import org.c02e.jpgpj.HashingAlgorithm;
 import org.c02e.jpgpj.Key;
 
 import javax.crypto.*;
@@ -28,7 +29,7 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
     public static final int CIPHERTEXT_START = 32; // SHA256 checksum
     public static final int CIPHERTEXT_END = -1;
 
-    public Crypt4GHOutputStream(OutputStream out, String key, String passphrase) throws IOException, NoSuchAlgorithmException, PGPException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
+    public Crypt4GHOutputStream(OutputStream out, String key) throws IOException, NoSuchAlgorithmException, PGPException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
         super(out);
 
         SecureRandom secureRandom = new SecureRandom();
@@ -51,7 +52,8 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
         ByteArrayInputStream decryptedHeaderInputStream = new ByteArrayInputStream(decryptedHeaderOutputStream.toByteArray());
 
         ByteArrayOutputStream encryptedHeaderOutputStream = new ByteArrayOutputStream();
-        Encryptor encryptor = new Encryptor(new Key(key, passphrase));
+        Encryptor encryptor = new Encryptor(new Key(key));
+        encryptor.setSigningAlgorithm(HashingAlgorithm.Unsigned);
         encryptor.encrypt(decryptedHeaderInputStream, encryptedHeaderOutputStream);
         encryptedHeaderOutputStream.close();
         byte[] encryptedHeader = encryptedHeaderOutputStream.toByteArray();
