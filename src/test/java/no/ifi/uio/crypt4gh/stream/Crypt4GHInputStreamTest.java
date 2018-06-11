@@ -2,6 +2,8 @@ package no.ifi.uio.crypt4gh.stream;
 
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import no.ifi.uio.crypt4gh.factory.HeaderFactory;
+import no.ifi.uio.crypt4gh.pojo.Header;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -38,6 +40,22 @@ public class Crypt4GHInputStreamTest {
         crypt4GHInputStream.seek(42);
         String line = new String(IOUtils.readFully(crypt4GHInputStream, 36));
         Assert.assertEquals(rawContents.get(1), line);
+
+        crypt4GHInputStream.close();
+    }
+
+    @Test
+    public void decryptHeaderSeparately() throws Exception {
+        byte[] headerBytes = IOUtils.readFully(getClass().getClassLoader().getResource("sample.txt.enc").openStream(), 669);
+        Header header = HeaderFactory.getInstance().getHeader(headerBytes, getKey(), getPassphrase());
+
+        List<String> rawContents = IOUtils.readLines(getClass().getClassLoader().getResource("sample.txt").openStream(), Charset.defaultCharset());
+
+        SeekableStream seekableStream = new SeekableFileStream(new File(getClass().getClassLoader().getResource("sample.txt.enc").getFile()));
+        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, header);
+
+        List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
+        Assert.assertEquals(rawContents, lines);
 
         crypt4GHInputStream.close();
     }
