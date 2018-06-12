@@ -24,10 +24,10 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
     public static final int KEY_LENGTH = 256;
     public static final int IV_LENGTH = 16;
     public static final int NUMBER_OF_RECORDS = 1;
-    public static final int PLAINTEXT_START = 0;
-    public static final int PLAINTEXT_END = -1;
-    public static final int CIPHERTEXT_START = 32; // SHA256 checksum
-    public static final int CIPHERTEXT_END = -1;
+    public static final long PLAINTEXT_START = 0;
+    public static final long PLAINTEXT_END = 0xFFFFFFFF;
+    public static final long CIPHERTEXT_START = 32; // SHA256 checksum
+    public static final long CTR_OFFSET = 0;
 
     public Crypt4GHOutputStream(OutputStream out, String key) throws IOException, NoSuchAlgorithmException, PGPException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
         super(out);
@@ -42,10 +42,10 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
 
         ByteArrayOutputStream decryptedHeaderOutputStream = new ByteArrayOutputStream();
         decryptedHeaderOutputStream.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(NUMBER_OF_RECORDS).array());
-        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putInt(PLAINTEXT_START).array());
-        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putInt(PLAINTEXT_END).array());
-        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putInt(CIPHERTEXT_START).array());
-        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putInt(CIPHERTEXT_END).array());
+        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(PLAINTEXT_START).array());
+        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(PLAINTEXT_END).array());
+        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(CIPHERTEXT_START).array());
+        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(CTR_OFFSET).array());
         decryptedHeaderOutputStream.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(EncryptionAlgorithm.AES_256_CTR.getCode()).array());
         decryptedHeaderOutputStream.write(sessionKey.getEncoded());
         decryptedHeaderOutputStream.write(ivBytes);

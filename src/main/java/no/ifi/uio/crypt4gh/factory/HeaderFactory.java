@@ -79,12 +79,12 @@ public class HeaderFactory {
         long plaintextStart = getLong(Arrays.copyOfRange(recordBytes, 0, 8));
         long plaintextEnd = getLong(Arrays.copyOfRange(recordBytes, 8, 16));
         long ciphertextStart = getLong(Arrays.copyOfRange(recordBytes, 16, 24));
-        long ciphertextEnd = getLong(Arrays.copyOfRange(recordBytes, 24, 32));
+        long ctrOffset = getLong(Arrays.copyOfRange(recordBytes, 24, 32));
         int method = getInt(Arrays.copyOfRange(recordBytes, 32, 36));
         EncryptionAlgorithm algorithm = EncryptionAlgorithm.valueOf(method);
         byte[] key = Arrays.copyOfRange(recordBytes, 36, 68);
         byte[] iv = Arrays.copyOfRange(recordBytes, 68, 84);
-        return new Record(plaintextStart, plaintextEnd, ciphertextStart, ciphertextEnd, algorithm, key, iv);
+        return new Record(plaintextStart, plaintextEnd, ciphertextStart, ctrOffset, algorithm, key, iv);
     }
 
     protected int getInt(byte[] bytes) {

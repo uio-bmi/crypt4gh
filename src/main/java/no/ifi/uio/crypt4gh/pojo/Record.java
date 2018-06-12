@@ -12,7 +12,7 @@ public class Record {
     private final long plaintextStart;
     private final long plaintextEnd;
     private final long ciphertextStart;
-    private final long ciphertextEnd;
+    private final long ctrOffset;
     private final EncryptionAlgorithm algorithm;
     private final byte[] key;
     private final byte[] iv;
