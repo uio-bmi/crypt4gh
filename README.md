@@ -1,7 +1,7 @@
 # crypt4gh
 
 ## Overview
-![](https://habrastorage.org/webt/jo/lo/v7/jolov7dgq6tqm5a70wpppmihlow.png)
+![](https://habrastorage.org/webt/-2/nf/xf/-2nfxf46jrdryxfo4ozkwxh33tw.png)
 
 ## Usage
 To include this library to your Maven project add following to the `pom.xml`:
