@@ -29,11 +29,11 @@ public class Crypt4GHInputStream extends SeekableStream {
     private final Cipher cipher;
     private final int blockSize;
 
-    protected Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, PGPException, BadBlockException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+    public Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, PGPException, BadBlockException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
         this(in, HeaderFactory.getInstance().getHeader(in, key, passphrase));
     }
 
-    protected Crypt4GHInputStream(SeekableStream in, Header header) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+    public Crypt4GHInputStream(SeekableStream in, Header header) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
         this.encryptedStream = in;
 
         Record record = header.getEncryptedHeader().getRecords().iterator().next();
