@@ -11,6 +11,19 @@
 
     <name>crypt4gh</name>
     <description>Crypt4GH Java implementation</description>
+    <url>https://github.com/uio-bmi/crypt4gh/</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/uio-bmi/crypt4gh/</url>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
