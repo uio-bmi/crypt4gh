@@ -1,7 +1,7 @@
 # crypt4gh
 
 ## Overview
-![](https://habrastorage.org/webt/-2/nf/xf/-2nfxf46jrdryxfo4ozkwxh33tw.png)
+![](https://habrastorage.org/webt/mz/7a/wa/mz7awalkt13exw7sgtdh9eexv3q.png)
 
 ## Usage
 To include this library to your Maven project add following to the `pom.xml`:
@@ -20,7 +20,7 @@ To include this library to your Maven project add following to the `pom.xml`:
 
     <repositories>
         <repository>
-            <id>jitpack.io</id>
+            <id>Crypt4GH</id>
             <url>https://github.com/uio-bmi/crypt4gh/raw/maven</url>
         </repository>
     </repositories>
