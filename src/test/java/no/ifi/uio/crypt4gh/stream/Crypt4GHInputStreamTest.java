@@ -22,7 +22,7 @@ public class Crypt4GHInputStreamTest {
         List<String> rawContents = IOUtils.readLines(getClass().getClassLoader().getResource("sample.txt").openStream(), Charset.defaultCharset());
 
         SeekableStream seekableStream = new SeekableFileStream(new File(getClass().getClassLoader().getResource("sample.txt.enc").getFile()));
-        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, getKey(), getPassphrase());
+        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, true, getKey(), getPassphrase());
 
         List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
         Assert.assertEquals(rawContents, lines);
@@ -35,7 +35,7 @@ public class Crypt4GHInputStreamTest {
         List<String> rawContents = IOUtils.readLines(getClass().getClassLoader().getResource("sample.txt").openStream(), Charset.defaultCharset());
 
         SeekableStream seekableStream = new SeekableFileStream(new File(getClass().getClassLoader().getResource("sample.txt.enc").getFile()));
-        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, getKey(), getPassphrase());
+        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, true, getKey(), getPassphrase());
 
         crypt4GHInputStream.seek(42);
         String line = new String(IOUtils.readFully(crypt4GHInputStream, 36));
@@ -52,7 +52,7 @@ public class Crypt4GHInputStreamTest {
         List<String> rawContents = IOUtils.readLines(getClass().getClassLoader().getResource("sample.txt").openStream(), Charset.defaultCharset());
 
         SeekableStream seekableStream = new SeekableFileStream(new File(getClass().getClassLoader().getResource("sample.txt.enc").getFile()));
-        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, header);
+        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, true, header);
 
         List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
         Assert.assertEquals(rawContents, lines);

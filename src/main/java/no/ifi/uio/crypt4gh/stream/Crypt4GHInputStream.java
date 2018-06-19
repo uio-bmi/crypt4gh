@@ -29,22 +29,36 @@ public class Crypt4GHInputStream extends SeekableStream {
     private final Cipher cipher;
     private final int blockSize;
 
-    public Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, PGPException, BadBlockException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
-        this(in, HeaderFactory.getInstance().getHeader(in, key, passphrase));
+    private final byte[] digest = new byte[32];
+
+    public Crypt4GHInputStream(SeekableStream in, boolean headerIncludedInStream, String key, String passphrase) throws IOException, PGPException, BadBlockException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+        this(in, headerIncludedInStream, HeaderFactory.getInstance().getHeader(in, key, passphrase));
+
     }
 
-    public Crypt4GHInputStream(SeekableStream in, Header header) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+    public Crypt4GHInputStream(SeekableStream in, boolean headerIncludedInStream, Header header) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
         this.encryptedStream = in;
 
         Record record = header.getEncryptedHeader().getRecords().iterator().next();
-        this.dataStart = header.getDataStart();
+        if (headerIncludedInStream) {
+            this.dataStart = header.getDataStart();
+        } else {
+            this.dataStart = record.getCiphertextStart();
+        }
         this.secretKeySpec = new SecretKeySpec(record.getKey(), 0, 32, record.getAlgorithm().getAlias().split("/")[0]);
         this.initialIV = Arrays.copyOf(record.getIv(), record.getIv().length);
         this.cipher = Cipher.getInstance(record.getAlgorithm().getAlias());
         this.cipher.init(Cipher.DECRYPT_MODE, this.secretKeySpec, new IvParameterSpec(this.initialIV));
         this.blockSize = cipher.getBlockSize();
 
+        in.seek(dataStart - record.getCiphertextStart());
+        in.read(digest, 0, 32);
+
         seek(0);
+    }
+
+    public byte[] getDigest() {
+        return digest;
     }
 
     @Override
