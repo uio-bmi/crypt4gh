@@ -2,7 +2,8 @@ package no.ifi.uio.crypt4gh.factory;
 
 import no.ifi.uio.crypt4gh.pojo.*;
 import org.bouncycastle.jcajce.provider.util.BadBlockException;
-import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.*;
+import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.c02e.jpgpj.Decryptor;
 import org.c02e.jpgpj.Key;
 
@@ -14,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 public class HeaderFactory {
@@ -34,6 +36,20 @@ public class HeaderFactory {
     }
 
     private HeaderFactory() {
+    }
+
+    public String getKeyId(byte[] headerBytes) throws IOException, PGPException {
+        ByteArrayInputStream headerInputStream = new ByteArrayInputStream(headerBytes);
+        getUnencryptedHeader(headerInputStream);
+        InputStream decoderStream = PGPUtil.getDecoderStream(headerInputStream);
+        PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(decoderStream, new BcKeyFingerprintCalculator());
+        PGPEncryptedDataList pgpEncryptedDataList = (PGPEncryptedDataList) pgpObjectFactory.nextObject();
+        for (Iterator it = pgpEncryptedDataList.getEncryptedDataObjects(); it.hasNext(); ) {
+            Object entry = it.next();
+            PGPPublicKeyEncryptedData pgpPublicKeyEncryptedData = (PGPPublicKeyEncryptedData) entry;
+            return Long.toHexString(pgpPublicKeyEncryptedData.getKeyID());
+        }
+        throw new PGPException("KeyID not found in the encrypted part of the header.");
     }
 
     public Header getHeader(byte[] headerBytes, String key, String passphrase) throws PGPException, IOException, BadBlockException {
