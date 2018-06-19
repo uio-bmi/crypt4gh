@@ -1,5 +1,5 @@
 # crypt4gh
-
+[![Build Status](https://travis-ci.org/uio-bmi/crypt4gh.svg?branch=master)](https://travis-ci.org/uio-bmi/crypt4gh)
 ## Overview
 ![](https://habrastorage.org/webt/mz/7a/wa/mz7awalkt13exw7sgtdh9eexv3q.png)
 
