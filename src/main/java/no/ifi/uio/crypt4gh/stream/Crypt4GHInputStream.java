@@ -46,7 +46,9 @@ public class Crypt4GHInputStream extends SeekableStream {
             this.dataStart = record.getCiphertextStart();
         }
         this.secretKeySpec = new SecretKeySpec(record.getKey(), 0, 32, record.getAlgorithm().getAlias().split("/")[0]);
-        this.initialIV = Arrays.copyOf(record.getIv(), record.getIv().length);
+        BigInteger iv = new BigInteger(record.getIv());
+        iv = iv.add(BigInteger.valueOf(record.getCtrOffset()));
+        this.initialIV = iv.toByteArray();
         this.cipher = Cipher.getInstance(record.getAlgorithm().getAlias());
         this.cipher.init(Cipher.DECRYPT_MODE, this.secretKeySpec, new IvParameterSpec(this.initialIV));
         this.blockSize = cipher.getBlockSize();
