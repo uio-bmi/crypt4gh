@@ -4,7 +4,7 @@
 ![](https://habrastorage.org/webt/mz/7a/wa/mz7awalkt13exw7sgtdh9eexv3q.png)
 
 ## Specification
-Current version of specs can be found [here](https://we.tl/GAEOUCo3qM).
+Current version of specs can be found [here](https://hyperbrowser.uio.no/hb/static/hyperbrowser/files/crypt4gh/crypt4gh.pdf).
 
 ## Usage
 To include this library to your Maven project add following to the `pom.xml`:
