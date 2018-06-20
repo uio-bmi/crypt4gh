@@ -1,5 +1,8 @@
 package no.ifi.uio.crypt4gh.pojo;
 
+/**
+ * Enum to list supported encryption algorithms.
+ */
 public enum EncryptionAlgorithm {
 
     AES_256_CTR(0, "AES/CTR/NoPadding");

@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
 
+/**
+ * Record aka Encryption Parameters POJO.
+ */
 @ToString
 @AllArgsConstructor
 @Data

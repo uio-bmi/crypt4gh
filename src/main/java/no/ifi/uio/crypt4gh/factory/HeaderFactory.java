@@ -18,12 +18,20 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * Factory for extracting Crypt4GH headers from input streams.
+ */
 public class HeaderFactory {
 
     public static int UNENCRYPTED_HEADER_LENGTH = 16;
 
     private static volatile HeaderFactory INSTANCE;
 
+    /**
+     * As it's singleton, this is the method for obtaining its instance.
+     *
+     * @return <code>HeaderFactory</code> instance.
+     */
     public static HeaderFactory getInstance() {
         if (INSTANCE == null) {
             synchronized (HeaderFactory.class) {
@@ -35,9 +43,20 @@ public class HeaderFactory {
         return INSTANCE;
     }
 
+    /**
+     * Private ctor.
+     */
     private HeaderFactory() {
     }
 
+    /**
+     * Obtains PGP Key ID from Crypt4GH header.
+     *
+     * @param headerBytes Header bytes.
+     * @return PGP Key ID.
+     * @throws IOException  In case of IO error.
+     * @throws PGPException In case of PGP error.
+     */
     public String getKeyId(byte[] headerBytes) throws IOException, PGPException {
         ByteArrayInputStream headerInputStream = new ByteArrayInputStream(headerBytes);
         getUnencryptedHeader(headerInputStream);
@@ -52,15 +71,44 @@ public class HeaderFactory {
         throw new PGPException("KeyID not found in the encrypted part of the header.");
     }
 
+    /**
+     * Constructs header based on header bytes, PGP key and PGP key passphrase.
+     *
+     * @param headerBytes Header bytes.
+     * @param key         PGP private key.
+     * @param passphrase  PGP key passphrase.
+     * @return Header POJO.
+     * @throws PGPException      In case of PGP error.
+     * @throws IOException       In case of IO error.
+     * @throws BadBlockException In case of decryption error.
+     */
     public Header getHeader(byte[] headerBytes, String key, String passphrase) throws PGPException, IOException, BadBlockException {
         return getHeader(new ByteArrayInputStream(headerBytes), key, passphrase);
     }
 
+    /**
+     * Extracts header from an InputStream, having PGP key and PGP key passphrase.
+     *
+     * @param in         InputStream to retrieve header from.
+     * @param key        PGP private key.
+     * @param passphrase PGP key passphrase.
+     * @return Header POJO.
+     * @throws PGPException      In case of PGP error.
+     * @throws IOException       In case of IO error.
+     * @throws BadBlockException In case of decryption error.
+     */
     public Header getHeader(InputStream in, String key, String passphrase) throws IOException, PGPException, BadBlockException {
         UnencryptedHeader unencryptedHeader = getUnencryptedHeader(in);
         return new Header(unencryptedHeader, getEncryptedHeader(in, unencryptedHeader, key, passphrase));
     }
 
+    /**
+     * Extracts unencrypted header from an InputStream.
+     *
+     * @param in InputStream to retrieve header from.
+     * @return Unencrypted header POJO.
+     * @throws IOException In case of IO error.
+     */
     protected UnencryptedHeader getUnencryptedHeader(InputStream in) throws IOException {
         byte[] unencryptedHeaderBytes = new byte[UNENCRYPTED_HEADER_LENGTH];
         in.read(unencryptedHeaderBytes);
@@ -70,6 +118,18 @@ public class HeaderFactory {
         return new UnencryptedHeader(protocolName, version, fullHeaderLength);
     }
 
+    /**
+     * Extracts encrypted header from an InputStream.
+     *
+     * @param in                InputStream to retrieve header from.
+     * @param unencryptedHeader Unencrypted header POJO.
+     * @param key               PGP private key.
+     * @param passphrase        PGP key passphrase.
+     * @return Encrypted header POJO.
+     * @throws PGPException      In case of PGP error.
+     * @throws IOException       In case of IO error.
+     * @throws BadBlockException In case of decryption error.
+     */
     protected EncryptedHeader getEncryptedHeader(InputStream in, UnencryptedHeader unencryptedHeader, String key, String passphrase) throws IOException, PGPException, BadBlockException {
         int encryptedHeaderLength = unencryptedHeader.getFullHeaderLength() - UNENCRYPTED_HEADER_LENGTH;
         byte[] encryptedHeaderBytes = new byte[encryptedHeaderLength];
@@ -91,6 +151,12 @@ public class HeaderFactory {
         return encryptedHeader;
     }
 
+    /**
+     * Constructs Record (i.e. Encryption Parameters) from record bytes.
+     *
+     * @param recordBytes Record bytes.
+     * @return Record POJO.
+     */
     protected Record getRecord(byte[] recordBytes) {
         long plaintextStart = getLong(Arrays.copyOfRange(recordBytes, 0, 8));
         long plaintextEnd = getLong(Arrays.copyOfRange(recordBytes, 8, 16));
@@ -103,10 +169,22 @@ public class HeaderFactory {
         return new Record(plaintextStart, plaintextEnd, ciphertextStart, ctrOffset, algorithm, key, iv);
     }
 
+    /**
+     * Utility method to get little endian integer from byte array.
+     *
+     * @param bytes Byte array.
+     * @return Integer.
+     */
     protected int getInt(byte[] bytes) {
         return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
 
+    /**
+     * Utility method to get little endian long from byte array.
+     *
+     * @param bytes Byte array.
+     * @return Long.
+     */
     protected long getLong(byte[] bytes) {
         return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
     }

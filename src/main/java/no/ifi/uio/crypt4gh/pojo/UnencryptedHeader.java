@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
 
+/**
+ * Unencrypted Crypt4GH header POJO.
+ */
 @ToString
 @AllArgsConstructor
 @Data

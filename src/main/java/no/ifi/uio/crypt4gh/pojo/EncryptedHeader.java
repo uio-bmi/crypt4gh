@@ -6,6 +6,9 @@ import lombok.ToString;
 
 import java.util.List;
 
+/**
+ * Encrypted Crypt4GH header POJO.
+ */
 @ToString
 @AllArgsConstructor
 @Data

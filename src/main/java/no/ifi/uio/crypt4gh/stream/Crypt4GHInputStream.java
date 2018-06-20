@@ -18,8 +18,10 @@ import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 
+/**
+ * SeekableStream wrapper to support Crypt4GH on-the-fly decryption.
+ */
 public class Crypt4GHInputStream extends SeekableStream {
 
     private final SeekableStream encryptedStream;
@@ -31,11 +33,38 @@ public class Crypt4GHInputStream extends SeekableStream {
 
     private final byte[] digest = new byte[32];
 
+    /**
+     * Constructor meant to be used without header provided.
+     *
+     * @param in                     <code>SeekableStream</code> in Crypt4GH format to be decrypted.
+     * @param headerIncludedInStream <code>true</code> if header is included to this stream, <code>false</code> otherwise.
+     * @param key                    PGP private key.
+     * @param passphrase             PGP key passphrase.
+     * @throws IOException                        In case of IO error.
+     * @throws PGPException                       In case of PGP error.
+     * @throws BadBlockException                  In case of decryption error.
+     * @throws NoSuchPaddingException             In case of decryption error.
+     * @throws NoSuchAlgorithmException           In case of decryption error.
+     * @throws InvalidAlgorithmParameterException In case of decryption error.
+     * @throws InvalidKeyException                In case of decryption error.
+     */
     public Crypt4GHInputStream(SeekableStream in, boolean headerIncludedInStream, String key, String passphrase) throws IOException, PGPException, BadBlockException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
         this(in, headerIncludedInStream, HeaderFactory.getInstance().getHeader(in, key, passphrase));
 
     }
 
+    /**
+     * Constructor meant to be used with header provided.
+     *
+     * @param in                     <code>SeekableStream</code> in Crypt4GH format to be decrypted.
+     * @param headerIncludedInStream <code>true</code> if header is included to this stream, <code>false</code> otherwise.
+     * @param header                 Crypt4GH header.
+     * @throws IOException                        In case of IO error.
+     * @throws NoSuchPaddingException             In case of decryption error.
+     * @throws NoSuchAlgorithmException           In case of decryption error.
+     * @throws InvalidAlgorithmParameterException In case of decryption error.
+     * @throws InvalidKeyException                In case of decryption error.
+     */
     public Crypt4GHInputStream(SeekableStream in, boolean headerIncludedInStream, Header header) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
         this.encryptedStream = in;
 
@@ -59,20 +88,34 @@ public class Crypt4GHInputStream extends SeekableStream {
         seek(0);
     }
 
+    /**
+     * Utility method to get SHA256 digest of the raw data.
+     *
+     * @return SHA256 digest of the raw data.
+     */
     public byte[] getDigest() {
         return digest;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long length() {
         return encryptedStream.length() - dataStart;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long position() throws IOException {
         return encryptedStream.position() - dataStart;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void seek(long position) throws IOException {
         encryptedStream.seek(position + dataStart);
@@ -91,18 +134,27 @@ public class Crypt4GHInputStream extends SeekableStream {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long skip(long n) throws IOException {
         seek(position() + n);
         return n;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int read() throws IOException {
         byte[] bytes = new byte[1];
         return read(bytes, 0, 1);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int read(byte[] buffer, int offset, int length) throws IOException {
         if (eof()) {
@@ -139,16 +191,25 @@ public class Crypt4GHInputStream extends SeekableStream {
         return realRead;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void close() throws IOException {
         encryptedStream.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean eof() throws IOException {
         return encryptedStream.eof();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getSource() {
         return encryptedStream.getSource();

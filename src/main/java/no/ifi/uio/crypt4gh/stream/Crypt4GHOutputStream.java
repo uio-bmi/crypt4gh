@@ -17,6 +17,9 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
+/**
+ * OutputStream wrapper to support Crypt4GH on-the-fly encryption.
+ */
 public class Crypt4GHOutputStream extends FilterOutputStream {
 
     public static final String PROTOCOL_NAME = "crypt4gh";
@@ -29,10 +32,35 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
     public static final long CIPHERTEXT_START = 0;
     public static final long CTR_OFFSET = 0;
 
+    /**
+     * Constructor that wraps OutputStream.
+     *
+     * @param out OutputStream to encrypt.
+     * @param key PGP public key.
+     * @throws IOException                        In case of IO error.
+     * @throws PGPException                       In case of PGP error.
+     * @throws NoSuchPaddingException             In case of decryption error.
+     * @throws NoSuchAlgorithmException           In case of decryption error.
+     * @throws InvalidAlgorithmParameterException In case of decryption error.
+     * @throws InvalidKeyException                In case of decryption error.
+     */
     public Crypt4GHOutputStream(OutputStream out, String key) throws IOException, NoSuchAlgorithmException, PGPException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
         this(out, key, null);
     }
 
+    /**
+     * Constructor that wraps OutputStream and adds SHA256 digest to it.
+     *
+     * @param out    OutputStream to encrypt.
+     * @param key    PGP public key.
+     * @param digest SHA256 digest
+     * @throws IOException                        In case of IO error.
+     * @throws PGPException                       In case of PGP error.
+     * @throws NoSuchPaddingException             In case of decryption error.
+     * @throws NoSuchAlgorithmException           In case of decryption error.
+     * @throws InvalidAlgorithmParameterException In case of decryption error.
+     * @throws InvalidKeyException                In case of decryption error.
+     */
     public Crypt4GHOutputStream(OutputStream out, String key, byte[] digest) throws IOException, NoSuchAlgorithmException, PGPException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
         super(out);
 
