@@ -1,5 +1,7 @@
 package no.ifi.uio.crypt4gh.pojo;
 
+import java.util.Arrays;
+
 /**
  * Enum to list supported encryption algorithms.
  */
@@ -24,12 +26,7 @@ public enum EncryptionAlgorithm {
     }
 
     public static EncryptionAlgorithm valueOf(int code) {
-        for (EncryptionAlgorithm encryptionAlgorithm : EncryptionAlgorithm.values()) {
-            if (encryptionAlgorithm.code == code) {
-                return encryptionAlgorithm;
-            }
-        }
-        throw new IllegalArgumentException(String.format("EncryptionAlgorithm with code %s is not supported by the library.", code));
+        return Arrays.stream(EncryptionAlgorithm.values()).filter(a -> a.code == code).findAny().orElseThrow(() -> new IllegalArgumentException(String.format("EncryptionAlgorithm with code %s is not supported by the library.", code)));
     }
 
 }
