@@ -2,6 +2,7 @@ package no.ifi.uio.crypt4gh.stream;
 
 import no.ifi.uio.crypt4gh.factory.HeaderFactory;
 import no.ifi.uio.crypt4gh.pojo.EncryptionAlgorithm;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
 import org.c02e.jpgpj.Encryptor;
 import org.c02e.jpgpj.HashingAlgorithm;
@@ -12,10 +13,7 @@ import javax.crypto.spec.IvParameterSpec;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
+import java.security.*;
 
 /**
  * OutputStream wrapper to support Crypt4GH on-the-fly encryption.
@@ -32,6 +30,10 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
     public static final long CIPHERTEXT_START = 0;
     public static final long CTR_OFFSET = 0;
 
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
+
     /**
      * Constructor that wraps OutputStream.
      *
@@ -43,8 +45,9 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
      * @throws NoSuchAlgorithmException           In case of decryption error.
      * @throws InvalidAlgorithmParameterException In case of decryption error.
      * @throws InvalidKeyException                In case of decryption error.
+     * @throws NoSuchProviderException            In case of decryption error.
      */
-    public Crypt4GHOutputStream(OutputStream out, String key) throws IOException, NoSuchAlgorithmException, PGPException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
+    public Crypt4GHOutputStream(OutputStream out, String key) throws IOException, NoSuchAlgorithmException, PGPException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException {
         this(out, key, null);
     }
 
@@ -60,8 +63,9 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
      * @throws NoSuchAlgorithmException           In case of decryption error.
      * @throws InvalidAlgorithmParameterException In case of decryption error.
      * @throws InvalidKeyException                In case of decryption error.
+     * @throws NoSuchProviderException            In case of decryption error.
      */
-    public Crypt4GHOutputStream(OutputStream out, String key, byte[] digest) throws IOException, NoSuchAlgorithmException, PGPException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
+    public Crypt4GHOutputStream(OutputStream out, String key, byte[] digest) throws IOException, NoSuchAlgorithmException, PGPException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException {
         super(out);
 
         SecureRandom secureRandom = new SecureRandom();
@@ -103,7 +107,7 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
             out.write(digest);
         }
 
-        Cipher cipher = Cipher.getInstance(alias);
+        Cipher cipher = Cipher.getInstance(alias, BouncyCastleProvider.PROVIDER_NAME);
         cipher.init(Cipher.ENCRYPT_MODE, sessionKey, new IvParameterSpec(ivBytes));
         this.out = new CipherOutputStream(out, cipher);
     }

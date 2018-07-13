@@ -5,6 +5,7 @@ import no.ifi.uio.crypt4gh.factory.HeaderFactory;
 import no.ifi.uio.crypt4gh.pojo.Header;
 import no.ifi.uio.crypt4gh.pojo.Record;
 import org.bouncycastle.jcajce.provider.util.BadBlockException;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
 
 import javax.crypto.Cipher;
@@ -15,14 +16,16 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 
 /**
  * SeekableStream wrapper to support Crypt4GH on-the-fly decryption.
  */
 public class Crypt4GHInputStream extends SeekableStream {
+
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
 
     private final SeekableStream encryptedStream;
     private final long dataStart;
@@ -47,8 +50,9 @@ public class Crypt4GHInputStream extends SeekableStream {
      * @throws NoSuchAlgorithmException           In case of decryption error.
      * @throws InvalidAlgorithmParameterException In case of decryption error.
      * @throws InvalidKeyException                In case of decryption error.
+     * @throws NoSuchProviderException            In case of decryption error.
      */
-    public Crypt4GHInputStream(SeekableStream in, boolean headerIncludedInStream, String key, String passphrase) throws IOException, PGPException, BadBlockException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+    public Crypt4GHInputStream(SeekableStream in, boolean headerIncludedInStream, String key, String passphrase) throws IOException, PGPException, BadBlockException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException {
         this(in, headerIncludedInStream, HeaderFactory.getInstance().getHeader(in, key, passphrase));
 
     }
@@ -64,8 +68,9 @@ public class Crypt4GHInputStream extends SeekableStream {
      * @throws NoSuchAlgorithmException           In case of decryption error.
      * @throws InvalidAlgorithmParameterException In case of decryption error.
      * @throws InvalidKeyException                In case of decryption error.
+     * @throws NoSuchProviderException            In case of decryption error.
      */
-    public Crypt4GHInputStream(SeekableStream in, boolean headerIncludedInStream, Header header) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+    public Crypt4GHInputStream(SeekableStream in, boolean headerIncludedInStream, Header header) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException {
         this.encryptedStream = in;
 
         Record record = header.getEncryptedHeader().getRecords().iterator().next();
@@ -78,7 +83,7 @@ public class Crypt4GHInputStream extends SeekableStream {
         BigInteger iv = new BigInteger(record.getIv());
         iv = iv.add(BigInteger.valueOf(record.getCtrOffset()));
         this.initialIV = iv.toByteArray();
-        this.cipher = Cipher.getInstance(record.getAlgorithm().getAlias());
+        this.cipher = Cipher.getInstance(record.getAlgorithm().getAlias(), BouncyCastleProvider.PROVIDER_NAME);
         this.cipher.init(Cipher.DECRYPT_MODE, this.secretKeySpec, new IvParameterSpec(this.initialIV));
         this.blockSize = cipher.getBlockSize();
 
