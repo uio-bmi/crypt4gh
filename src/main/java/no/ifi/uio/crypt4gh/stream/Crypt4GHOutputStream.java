@@ -2,18 +2,21 @@ package no.ifi.uio.crypt4gh.stream;
 
 import no.ifi.uio.crypt4gh.factory.HeaderFactory;
 import no.ifi.uio.crypt4gh.pojo.EncryptionAlgorithm;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.apache.commons.crypto.stream.CryptoOutputStream;
 import org.bouncycastle.openpgp.PGPException;
 import org.c02e.jpgpj.Encryptor;
 import org.c02e.jpgpj.HashingAlgorithm;
 import org.c02e.jpgpj.Key;
 
-import javax.crypto.*;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.security.*;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.Properties;
 
 /**
  * OutputStream wrapper to support Crypt4GH on-the-fly encryption.
@@ -30,24 +33,16 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
     public static final long CIPHERTEXT_START = 0;
     public static final long CTR_OFFSET = 0;
 
-    static {
-        Security.addProvider(new BouncyCastleProvider());
-    }
-
     /**
      * Constructor that wraps OutputStream.
      *
      * @param out OutputStream to encrypt.
      * @param key PGP public key.
-     * @throws IOException                        In case of IO error.
-     * @throws PGPException                       In case of PGP error.
-     * @throws NoSuchPaddingException             In case of decryption error.
-     * @throws NoSuchAlgorithmException           In case of decryption error.
-     * @throws InvalidAlgorithmParameterException In case of decryption error.
-     * @throws InvalidKeyException                In case of decryption error.
-     * @throws NoSuchProviderException            In case of decryption error.
+     * @throws IOException              In case of IO error.
+     * @throws PGPException             In case of PGP error.
+     * @throws NoSuchAlgorithmException In case of decryption error.
      */
-    public Crypt4GHOutputStream(OutputStream out, String key) throws IOException, NoSuchAlgorithmException, PGPException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException {
+    public Crypt4GHOutputStream(OutputStream out, String key) throws IOException, NoSuchAlgorithmException, PGPException {
         this(out, key, null);
     }
 
@@ -57,15 +52,11 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
      * @param out    OutputStream to encrypt.
      * @param key    PGP public key.
      * @param digest SHA256 digest
-     * @throws IOException                        In case of IO error.
-     * @throws PGPException                       In case of PGP error.
-     * @throws NoSuchPaddingException             In case of decryption error.
-     * @throws NoSuchAlgorithmException           In case of decryption error.
-     * @throws InvalidAlgorithmParameterException In case of decryption error.
-     * @throws InvalidKeyException                In case of decryption error.
-     * @throws NoSuchProviderException            In case of decryption error.
+     * @throws IOException              In case of IO error.
+     * @throws PGPException             In case of PGP error.
+     * @throws NoSuchAlgorithmException In case of decryption error.
      */
-    public Crypt4GHOutputStream(OutputStream out, String key, byte[] digest) throws IOException, NoSuchAlgorithmException, PGPException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException {
+    public Crypt4GHOutputStream(OutputStream out, String key, byte[] digest) throws IOException, NoSuchAlgorithmException, PGPException {
         super(out);
 
         SecureRandom secureRandom = new SecureRandom();
@@ -107,9 +98,7 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
             out.write(digest);
         }
 
-        Cipher cipher = Cipher.getInstance(alias, BouncyCastleProvider.PROVIDER_NAME);
-        cipher.init(Cipher.ENCRYPT_MODE, sessionKey, new IvParameterSpec(ivBytes));
-        this.out = new CipherOutputStream(out, cipher);
+        this.out = new CryptoOutputStream(alias, new Properties(), out, sessionKey, new IvParameterSpec(ivBytes));
     }
 
 }
