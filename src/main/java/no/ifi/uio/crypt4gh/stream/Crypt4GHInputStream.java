@@ -4,25 +4,22 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import no.ifi.uio.crypt4gh.factory.HeaderFactory;
 import no.ifi.uio.crypt4gh.pojo.Header;
 import no.ifi.uio.crypt4gh.pojo.Record;
+import org.apache.commons.crypto.stream.PositionedCryptoInputStream;
 import org.bouncycastle.jcajce.provider.util.BadBlockException;
 import org.bouncycastle.openpgp.PGPException;
 
-import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
-import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
+import java.util.Properties;
 
 /**
- * SeekableStream wrapper to support Crypt4GH on-the-fly decryption.
+ * <code>SeekableStream</code> wrapper to support Crypt4GH on-the-fly decryption.
  */
 public class Crypt4GHInputStream extends SeekableStream {
 
-    private final SeekableStream encryptedStream;
+    public static final int MINIMUM_BUFFER_SIZE = 512;
 
-    private final byte[] digest = new byte[32];
+    private final SeekableStreamInput seekableStreamInput;
+    private final PositionedCryptoInputStream encryptedStream;
 
     /**
      * Constructor.
@@ -30,33 +27,17 @@ public class Crypt4GHInputStream extends SeekableStream {
      * @param in         Crypt4GH <code>SeekableStream</code> to be decrypted.
      * @param key        PGP private key.
      * @param passphrase PGP key passphrase.
-     * @throws IOException                        In case of IO error.
-     * @throws NoSuchPaddingException             In case of decryption error.
-     * @throws NoSuchAlgorithmException           In case of decryption error.
-     * @throws InvalidAlgorithmParameterException In case of decryption error.
-     * @throws InvalidKeyException                In case of decryption error.
-     * @throws NoSuchProviderException            In case of decryption error.
-     * @throws PGPException                       In case of decryption error.
-     * @throws BadBlockException                  In case of decryption error.
+     * @throws IOException       In case of IO error.
+     * @throws PGPException      In case of decryption error.
+     * @throws BadBlockException In case of decryption error.
      */
-    public Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException, PGPException, BadBlockException {
+    public Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, PGPException, BadBlockException {
         Header header = HeaderFactory.getInstance().getHeader(in, key, passphrase);
         Record record = header.getEncryptedHeader().getRecords().iterator().next();
-        BigInteger iv = new BigInteger(record.getIv());
-        iv = iv.add(BigInteger.valueOf(record.getCtrOffset()));
-        byte[] initialIV = iv.toByteArray();
-        in.read(digest, 0, 32);
-        this.encryptedStream = new AESInputStream(in, record.getKey(), initialIV, header.getDataStart());
+        long dataStart = header.getUnencryptedHeader().getFullHeaderLength();
+        this.seekableStreamInput = new SeekableStreamInput(in, MINIMUM_BUFFER_SIZE, dataStart);
+        this.encryptedStream = new PositionedCryptoInputStream(new Properties(), seekableStreamInput, record.getKey(), record.getIv(), dataStart);
         seek(0);
-    }
-
-    /**
-     * Utility method to get SHA256 digest of the raw data.
-     *
-     * @return SHA256 digest of the raw data.
-     */
-    public byte[] getDigest() {
-        return digest;
     }
 
     /**
@@ -64,7 +45,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public long length() {
-        return encryptedStream.length();
+        return this.seekableStreamInput.length();
     }
 
     /**
@@ -72,7 +53,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public long position() throws IOException {
-        return encryptedStream.position();
+        return this.seekableStreamInput.position();
     }
 
     /**
@@ -80,7 +61,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public void seek(long position) throws IOException {
-        encryptedStream.seek(position);
+        this.encryptedStream.seek(position);
     }
 
     /**
@@ -88,7 +69,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public int read() throws IOException {
-        return encryptedStream.read();
+        return this.encryptedStream.read();
     }
 
     /**
@@ -96,7 +77,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public int read(byte[] buffer, int offset, int length) throws IOException {
-        return encryptedStream.read(buffer, offset, length);
+        return this.encryptedStream.read(buffer, offset, length);
     }
 
     /**
@@ -104,7 +85,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public void close() throws IOException {
-        encryptedStream.close();
+        this.encryptedStream.close();
     }
 
     /**
@@ -112,7 +93,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public boolean eof() throws IOException {
-        return encryptedStream.eof();
+        return this.seekableStreamInput.eof();
     }
 
     /**
@@ -120,7 +101,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public String getSource() {
-        return encryptedStream.getSource();
+        return this.seekableStreamInput.getSource();
     }
 
 }
