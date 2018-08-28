@@ -76,20 +76,6 @@ public class HeaderFactory {
      *
      * @param headerBytes Header bytes.
      * @param key         PGP private key.
-     * @return Header POJO.
-     * @throws PGPException      In case of PGP error.
-     * @throws IOException       In case of IO error.
-     * @throws BadBlockException In case of decryption error.
-     */
-    public Header getHeader(byte[] headerBytes, String key) throws PGPException, IOException, BadBlockException {
-        return getHeader(new ByteArrayInputStream(headerBytes), key);
-    }
-
-    /**
-     * Constructs header based on header bytes, PGP key and PGP key passphrase.
-     *
-     * @param headerBytes Header bytes.
-     * @param key         PGP private key.
      * @param passphrase  PGP key passphrase.
      * @return Header POJO.
      * @throws PGPException      In case of PGP error.
@@ -98,21 +84,6 @@ public class HeaderFactory {
      */
     public Header getHeader(byte[] headerBytes, String key, String passphrase) throws PGPException, IOException, BadBlockException {
         return getHeader(new ByteArrayInputStream(headerBytes), key, passphrase);
-    }
-
-    /**
-     * Extracts header from an InputStream, having PGP key and PGP key passphrase.
-     *
-     * @param in  InputStream to retrieve header from.
-     * @param key PGP private key.
-     * @return Header POJO.
-     * @throws PGPException      In case of PGP error.
-     * @throws IOException       In case of IO error.
-     * @throws BadBlockException In case of decryption error.
-     */
-    public Header getHeader(InputStream in, String key) throws IOException, PGPException, BadBlockException {
-        UnencryptedHeader unencryptedHeader = getUnencryptedHeader(in);
-        return new Header(unencryptedHeader, getEncryptedHeader(in, unencryptedHeader, key));
     }
 
     /**
@@ -145,21 +116,6 @@ public class HeaderFactory {
         int version = getInt(Arrays.copyOfRange(unencryptedHeaderBytes, 8, 12));
         int fullHeaderLength = getInt(Arrays.copyOfRange(unencryptedHeaderBytes, 12, 16));
         return new UnencryptedHeader(protocolName, version, fullHeaderLength);
-    }
-
-    /**
-     * Extracts encrypted header from an InputStream.
-     *
-     * @param in                InputStream to retrieve header from.
-     * @param unencryptedHeader Unencrypted header POJO.
-     * @param key               ASCII-armored unlocked PGP private key.
-     * @return Encrypted header POJO.
-     * @throws PGPException      In case of PGP error.
-     * @throws IOException       In case of IO error.
-     * @throws BadBlockException In case of decryption error.
-     */
-    protected EncryptedHeader getEncryptedHeader(InputStream in, UnencryptedHeader unencryptedHeader, String key) throws IOException, PGPException, BadBlockException {
-        return getEncryptedHeader(in, unencryptedHeader, new Key(key));
     }
 
     /**

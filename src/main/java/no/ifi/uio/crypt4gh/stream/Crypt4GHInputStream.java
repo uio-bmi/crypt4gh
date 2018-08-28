@@ -37,66 +37,25 @@ public class Crypt4GHInputStream extends SeekableStream {
     private final byte[] digest = new byte[32];
 
     /**
-     * Constructor meant to be used without header provided.
-     *
-     * @param in                     <code>SeekableStream</code> in Crypt4GH format to be decrypted.
-     * @param headerIncludedInStream <code>true</code> if header is included to the source stream, <code>false</code> otherwise.
-     * @param key                    PGP private key.
-     * @throws IOException                        In case of IO error.
-     * @throws PGPException                       In case of PGP error.
-     * @throws BadBlockException                  In case of decryption error.
-     * @throws NoSuchPaddingException             In case of decryption error.
-     * @throws NoSuchAlgorithmException           In case of decryption error.
-     * @throws InvalidAlgorithmParameterException In case of decryption error.
-     * @throws InvalidKeyException                In case of decryption error.
-     * @throws NoSuchProviderException            In case of decryption error.
-     */
-    public Crypt4GHInputStream(SeekableStream in, boolean headerIncludedInStream, String key) throws IOException, PGPException, BadBlockException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException {
-        this(in, headerIncludedInStream, HeaderFactory.getInstance().getHeader(in, key));
-    }
-
-    /**
-     * Constructor meant to be used without header provided.
-     *
-     * @param in                     <code>SeekableStream</code> in Crypt4GH format to be decrypted.
-     * @param headerIncludedInStream <code>true</code> if header is included to the source stream, <code>false</code> otherwise.
-     * @param key                    PGP private key.
-     * @param passphrase             PGP key passphrase.
-     * @throws IOException                        In case of IO error.
-     * @throws PGPException                       In case of PGP error.
-     * @throws BadBlockException                  In case of decryption error.
-     * @throws NoSuchPaddingException             In case of decryption error.
-     * @throws NoSuchAlgorithmException           In case of decryption error.
-     * @throws InvalidAlgorithmParameterException In case of decryption error.
-     * @throws InvalidKeyException                In case of decryption error.
-     * @throws NoSuchProviderException            In case of decryption error.
-     */
-    public Crypt4GHInputStream(SeekableStream in, boolean headerIncludedInStream, String key, String passphrase) throws IOException, PGPException, BadBlockException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException {
-        this(in, headerIncludedInStream, HeaderFactory.getInstance().getHeader(in, key, passphrase));
-    }
-
-    /**
      * Constructor meant to be used with header provided.
      *
-     * @param in                     <code>SeekableStream</code> in Crypt4GH format to be decrypted.
-     * @param headerIncludedInStream <code>true</code> if header is included to the source stream, <code>false</code> otherwise.
-     * @param header                 Crypt4GH header.
+     * @param in         <code>SeekableStream</code> in Crypt4GH format to be decrypted.
+     * @param key        PGP private key.
+     * @param passphrase PGP key passphrase.
      * @throws IOException                        In case of IO error.
      * @throws NoSuchPaddingException             In case of decryption error.
      * @throws NoSuchAlgorithmException           In case of decryption error.
      * @throws InvalidAlgorithmParameterException In case of decryption error.
      * @throws InvalidKeyException                In case of decryption error.
      * @throws NoSuchProviderException            In case of decryption error.
+     * @throws PGPException                       In case of decryption error.
+     * @throws BadBlockException                  In case of decryption error.
      */
-    public Crypt4GHInputStream(SeekableStream in, boolean headerIncludedInStream, Header header) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException {
+    public Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException, PGPException, BadBlockException {
         this.encryptedStream = in;
-
+        Header header = HeaderFactory.getInstance().getHeader(this.encryptedStream, key, passphrase);
         Record record = header.getEncryptedHeader().getRecords().iterator().next();
-        if (headerIncludedInStream) {
-            this.dataStart = header.getDataStart();
-        } else {
-            this.dataStart = record.getCiphertextStart();
-        }
+        this.dataStart = header.getDataStart();
         this.secretKeySpec = new SecretKeySpec(record.getKey(), 0, 32, record.getAlgorithm().getAlias().split("/")[0]);
         BigInteger iv = new BigInteger(record.getIv());
         iv = iv.add(BigInteger.valueOf(record.getCtrOffset()));

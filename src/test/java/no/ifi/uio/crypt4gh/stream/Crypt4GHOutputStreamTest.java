@@ -30,7 +30,7 @@ public class Crypt4GHOutputStreamTest {
 
         File tempFile = new File("output.enc");
         SeekableStream seekableStream = new SeekableFileStream(tempFile);
-        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, true, getKey(), getPassphrase());
+        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, getKey(), getPassphrase());
 
         List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
         Assert.assertEquals(rawContents, lines);
