@@ -5,41 +5,29 @@ import no.ifi.uio.crypt4gh.factory.HeaderFactory;
 import no.ifi.uio.crypt4gh.pojo.Header;
 import no.ifi.uio.crypt4gh.pojo.Record;
 import org.bouncycastle.jcajce.provider.util.BadBlockException;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
 
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.*;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
 /**
  * SeekableStream wrapper to support Crypt4GH on-the-fly decryption.
  */
 public class Crypt4GHInputStream extends SeekableStream {
 
-    static {
-        Security.addProvider(new BouncyCastleProvider());
-    }
-
     private final SeekableStream encryptedStream;
-    private final long dataStart;
-    private final SecretKeySpec secretKeySpec;
-    private final byte[] initialIV;
-    private final Cipher cipher;
-    private final int blockSize;
 
     private final byte[] digest = new byte[32];
 
     /**
-     * Constructor meant to be used with header provided.
+     * Constructor.
      *
-     * @param in         <code>SeekableStream</code> in Crypt4GH format to be decrypted.
+     * @param in         Crypt4GH <code>SeekableStream</code> to be decrypted.
      * @param key        PGP private key.
      * @param passphrase PGP key passphrase.
      * @throws IOException                        In case of IO error.
@@ -52,21 +40,13 @@ public class Crypt4GHInputStream extends SeekableStream {
      * @throws BadBlockException                  In case of decryption error.
      */
     public Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchProviderException, PGPException, BadBlockException {
-        this.encryptedStream = in;
-        Header header = HeaderFactory.getInstance().getHeader(this.encryptedStream, key, passphrase);
+        Header header = HeaderFactory.getInstance().getHeader(in, key, passphrase);
         Record record = header.getEncryptedHeader().getRecords().iterator().next();
-        this.dataStart = header.getDataStart();
-        this.secretKeySpec = new SecretKeySpec(record.getKey(), 0, 32, record.getAlgorithm().getAlias().split("/")[0]);
         BigInteger iv = new BigInteger(record.getIv());
         iv = iv.add(BigInteger.valueOf(record.getCtrOffset()));
-        this.initialIV = iv.toByteArray();
-        this.cipher = Cipher.getInstance(record.getAlgorithm().getAlias(), BouncyCastleProvider.PROVIDER_NAME);
-        this.cipher.init(Cipher.DECRYPT_MODE, this.secretKeySpec, new IvParameterSpec(this.initialIV));
-        this.blockSize = cipher.getBlockSize();
-
-        in.seek(dataStart - record.getCiphertextStart());
+        byte[] initialIV = iv.toByteArray();
         in.read(digest, 0, 32);
-
+        this.encryptedStream = new AESInputStream(in, record.getKey(), initialIV, header.getDataStart());
         seek(0);
     }
 
@@ -84,7 +64,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public long length() {
-        return encryptedStream.length() - dataStart;
+        return encryptedStream.length();
     }
 
     /**
@@ -92,7 +72,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public long position() throws IOException {
-        return encryptedStream.position() - dataStart;
+        return encryptedStream.position();
     }
 
     /**
@@ -100,29 +80,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public void seek(long position) throws IOException {
-        encryptedStream.seek(position + dataStart);
-
-        long block = position / blockSize;
-
-        // Update CTR IV counter according to block number
-        BigInteger ivBI = new BigInteger(initialIV);
-        ivBI = ivBI.add(BigInteger.valueOf(block));
-        IvParameterSpec newIVParameterSpec = new IvParameterSpec(ivBI.toByteArray());
-
-        try {
-            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, newIVParameterSpec);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long skip(long n) throws IOException {
-        seek(position() + n);
-        return n;
+        encryptedStream.seek(position);
     }
 
     /**
@@ -130,8 +88,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public int read() throws IOException {
-        byte[] bytes = new byte[1];
-        return read(bytes, 0, 1);
+        return encryptedStream.read();
     }
 
     /**
@@ -139,38 +96,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public int read(byte[] buffer, int offset, int length) throws IOException {
-        if (eof()) {
-            return -1;
-        }
-        long currentPosition = position();
-        long startBlock = currentPosition / blockSize;
-        long start = startBlock * blockSize;
-        long endBlock = (currentPosition + length) / blockSize + 1;
-        long end = endBlock * blockSize;
-        if (end > length()) {
-            end = length();
-        }
-        if (length > end - start) {
-            length = (int) (end - start);
-        }
-        int prepended = (int) (currentPosition - start);
-        int appended = (int) (end - (currentPosition + length));
-        encryptedStream.seek(start + dataStart);
-        int total = prepended + length + appended;
-        byte[] encryptedBytes = new byte[total];
-        encryptedStream.read(encryptedBytes, offset, total);
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(encryptedBytes);
-        CipherInputStream cipherInputStream = new CipherInputStream(byteArrayInputStream, cipher);
-        cipherInputStream.read(new byte[prepended]);
-        int realRead = 0;
-        int read;
-        while (length != 0 && (read = cipherInputStream.read(buffer, offset, length)) != -1) {
-            offset += read;
-            length -= read;
-            realRead += read;
-        }
-        encryptedStream.seek(currentPosition + realRead + dataStart);
-        return realRead;
+        return encryptedStream.read(buffer, offset, length);
     }
 
     /**

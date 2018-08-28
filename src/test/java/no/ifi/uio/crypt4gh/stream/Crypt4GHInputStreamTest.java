@@ -39,6 +39,10 @@ public class Crypt4GHInputStreamTest {
         String line = new String(IOUtils.readFully(crypt4GHInputStream, 36));
         Assert.assertEquals(rawContents.get(1), line);
 
+        crypt4GHInputStream.seek(0);
+        line = new String(IOUtils.readFully(crypt4GHInputStream, 41));
+        Assert.assertEquals(rawContents.get(0), line);
+
         crypt4GHInputStream.close();
     }
 
