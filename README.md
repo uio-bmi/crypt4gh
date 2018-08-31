@@ -23,8 +23,8 @@ To include this library to your Maven project add following to the `pom.xml`:
 
     <repositories>
         <repository>
-            <id>Crypt4GH</id>
-            <url>https://github.com/uio-bmi/crypt4gh/raw/maven</url>
+            <id>nexus.norgene.no</id>
+            <url>https://nexus.norgene.no/repository/maven-releases/</url>
         </repository>
     </repositories>
 
