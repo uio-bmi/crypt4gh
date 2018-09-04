@@ -2,6 +2,7 @@ package no.ifi.uio.crypt4gh.stream;
 
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
@@ -19,7 +20,7 @@ import java.util.List;
 public class Crypt4GHOutputStreamTest {
 
     @Test
-    public void encrypt() throws Exception {
+    public void encryptWithoutDigest() throws Exception {
         byte[] rawFileBytes = FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource("sample.txt").getFile()));
         OutputStream outputStream = new FileOutputStream("output.enc");
         Crypt4GHOutputStream crypt4GHOutputStream = new Crypt4GHOutputStream(outputStream, getKey());
@@ -32,6 +33,30 @@ public class Crypt4GHOutputStreamTest {
         SeekableStream seekableStream = new SeekableFileStream(tempFile);
         Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, getKey(), getPassphrase());
 
+        List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
+        Assert.assertEquals(rawContents, lines);
+
+        crypt4GHInputStream.close();
+
+        tempFile.delete();
+    }
+
+    @Test
+    public void encryptWithDigest() throws Exception {
+        byte[] rawFileBytes = FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource("sample.txt").getFile()));
+        byte[] digest = DigestUtils.sha256(rawFileBytes);
+        OutputStream outputStream = new FileOutputStream("output.enc");
+        Crypt4GHOutputStream crypt4GHOutputStream = new Crypt4GHOutputStream(outputStream, getKey(), digest);
+        crypt4GHOutputStream.write(rawFileBytes);
+        crypt4GHOutputStream.close();
+
+        List<String> rawContents = IOUtils.readLines(getClass().getClassLoader().getResource("sample.txt").openStream(), Charset.defaultCharset());
+
+        File tempFile = new File("output.enc");
+        SeekableStream seekableStream = new SeekableFileStream(tempFile);
+        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, getKey(), getPassphrase());
+
+        Assert.assertArrayEquals(digest, crypt4GHInputStream.getDigest());
         List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
         Assert.assertEquals(rawContents, lines);
 

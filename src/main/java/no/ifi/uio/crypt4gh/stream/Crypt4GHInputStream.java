@@ -21,6 +21,8 @@ public class Crypt4GHInputStream extends SeekableStream {
     private final SeekableStreamInput seekableStreamInput;
     private final PositionedCryptoInputStream encryptedStream;
 
+    private final byte[] digest = new byte[32];
+
     /**
      * Constructor.
      *
@@ -34,7 +36,11 @@ public class Crypt4GHInputStream extends SeekableStream {
     public Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, PGPException, BadBlockException {
         Header header = HeaderFactory.getInstance().getHeader(in, key, passphrase);
         Record record = header.getEncryptedHeader().getRecords().iterator().next();
-        long dataStart = header.getUnencryptedHeader().getFullHeaderLength();
+        long ciphertextStart = record.getCiphertextStart();
+        if (ciphertextStart != 0) { // Check if the file contains digest
+            in.read(digest, 0, 32);
+        }
+        long dataStart = ciphertextStart + header.getUnencryptedHeader().getFullHeaderLength();
         this.seekableStreamInput = new SeekableStreamInput(in, MINIMUM_BUFFER_SIZE, dataStart);
         this.encryptedStream = new PositionedCryptoInputStream(new Properties(), seekableStreamInput, record.getKey(), record.getIv(), dataStart);
         seek(0);
@@ -102,6 +108,15 @@ public class Crypt4GHInputStream extends SeekableStream {
     @Override
     public String getSource() {
         return this.seekableStreamInput.getSource();
+    }
+
+    /**
+     * Utility method to get SHA256 digest of the raw data.
+     *
+     * @return SHA256 digest of the raw data.
+     */
+    public byte[] getDigest() {
+        return digest;
     }
 
 }

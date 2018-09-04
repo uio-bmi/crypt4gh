@@ -13,10 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Factory for extracting Crypt4GH headers from input streams.
@@ -50,25 +47,31 @@ public class HeaderFactory {
     }
 
     /**
-     * Obtains PGP Key ID from Crypt4GH header.
+     * Obtains PGP Key IDs from Crypt4GH header.
      *
      * @param headerBytes Header bytes.
-     * @return PGP Key ID.
+     * @return Collection of PGP Key IDs.
      * @throws IOException  In case of IO error.
      * @throws PGPException In case of PGP error.
      */
-    public String getKeyId(byte[] headerBytes) throws IOException, PGPException {
+    public Collection<String> getKeyIds(byte[] headerBytes) throws IOException, PGPException {
         ByteArrayInputStream headerInputStream = new ByteArrayInputStream(headerBytes);
         getUnencryptedHeader(headerInputStream);
         InputStream decoderStream = PGPUtil.getDecoderStream(headerInputStream);
         PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(decoderStream, new BcKeyFingerprintCalculator());
         PGPEncryptedDataList pgpEncryptedDataList = (PGPEncryptedDataList) pgpObjectFactory.nextObject();
-        for (Iterator it = pgpEncryptedDataList.getEncryptedDataObjects(); it.hasNext(); ) {
-            Object entry = it.next();
+        Iterator iterator = pgpEncryptedDataList.getEncryptedDataObjects();
+        Set<String> ids = new HashSet<>();
+        while (iterator.hasNext()) {
+            Object entry = iterator.next();
             PGPPublicKeyEncryptedData pgpPublicKeyEncryptedData = (PGPPublicKeyEncryptedData) entry;
-            return Long.toHexString(pgpPublicKeyEncryptedData.getKeyID());
+            ids.add(Long.toHexString(pgpPublicKeyEncryptedData.getKeyID()));
         }
-        throw new PGPException("KeyID not found in the encrypted part of the header.");
+        if (ids.isEmpty()) {
+            throw new PGPException("KeyID not found in the encrypted part of the header.");
+        } else {
+            return ids;
+        }
     }
 
     /**
