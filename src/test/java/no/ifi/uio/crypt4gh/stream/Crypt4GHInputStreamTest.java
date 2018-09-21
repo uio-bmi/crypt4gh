@@ -9,18 +9,27 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.List;
 
 @RunWith(JUnit4.class)
 public class Crypt4GHInputStreamTest {
 
+    @Test(expected = IOException.class)
+    public void tooSmallBuffer() throws Exception {
+        SeekableStream seekableStream = new SeekableFileStream(new File(getClass().getClassLoader().getResource("sample.txt.enc").getFile()));
+        new Crypt4GHInputStream(seekableStream, getKey(), getPassphrase(), 500);
+    }
+
     @Test
     public void decryptWhole() throws Exception {
         List<String> rawContents = IOUtils.readLines(getClass().getClassLoader().getResource("sample.txt").openStream(), Charset.defaultCharset());
 
         SeekableStream seekableStream = new SeekableFileStream(new File(getClass().getClassLoader().getResource("sample.txt.enc").getFile()));
-        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, getKey(), getPassphrase());
+        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, getKey(), getPassphrase(), 600);
 
         List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
         Assert.assertEquals(rawContents, lines);
@@ -44,6 +53,22 @@ public class Crypt4GHInputStreamTest {
         Assert.assertEquals(rawContents.get(0), line);
 
         crypt4GHInputStream.close();
+    }
+
+    @Test
+    public void reencryption() throws Exception {
+        SeekableStream seekableStream = new SeekableFileStream(new File(getClass().getClassLoader().getResource("sample.txt.enc").getFile()));
+        Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(seekableStream, getKey(), getPassphrase());
+
+        File tempFile = new File("output.enc");
+        OutputStream outputStream = new FileOutputStream(tempFile);
+        Crypt4GHOutputStream crypt4GHOutputStream = new Crypt4GHOutputStream(outputStream, getKey());
+        IOUtils.copyLarge(crypt4GHInputStream, crypt4GHOutputStream);
+
+        crypt4GHInputStream.close();
+        outputStream.close();
+        outputStream.flush();
+        tempFile.delete();
     }
 
     private String getKey() {
