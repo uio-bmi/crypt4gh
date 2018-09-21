@@ -12,6 +12,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Properties;
 
 /**
@@ -28,6 +29,9 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
     public static final long PLAINTEXT_END = 0xFFFFFFFF;
     public static final long CIPHERTEXT_START = 0;
     public static final long CTR_OFFSET = 0;
+
+    private byte[] sessionKeyBytes;
+    private byte[] ivBytes;
 
     /**
      * Constructor that wraps OutputStream.
@@ -54,9 +58,9 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
         super(out);
 
         SecureRandom secureRandom = new SecureRandom();
-        byte[] sessionKeyBytes = new byte[KEY_STRENGTH / 8];
+        sessionKeyBytes = new byte[KEY_STRENGTH / 8];
         secureRandom.nextBytes(sessionKeyBytes);
-        byte[] ivBytes = new byte[IV_LENGTH];
+        ivBytes = new byte[IV_LENGTH];
         secureRandom.nextBytes(ivBytes);
 
         long ciphertextStart = CIPHERTEXT_START;
@@ -92,6 +96,24 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
         }
 
         this.out = new CtrCryptoOutputStream(new Properties(), out, sessionKeyBytes, ivBytes);
+    }
+
+    /**
+     * Returns AES passphrase used for encryption.
+     *
+     * @return AES session key.
+     */
+    public byte[] getSessionKeyBytes() {
+        return Arrays.copyOf(sessionKeyBytes, sessionKeyBytes.length);
+    }
+
+    /**
+     * Returns AES IV used for encryption.
+     *
+     * @return AES initialization vector.
+     */
+    public byte[] getIvBytes() {
+        return Arrays.copyOf(ivBytes, ivBytes.length);
     }
 
 }
