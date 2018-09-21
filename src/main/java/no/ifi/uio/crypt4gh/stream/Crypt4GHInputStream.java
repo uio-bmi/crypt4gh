@@ -34,6 +34,24 @@ public class Crypt4GHInputStream extends SeekableStream {
      * @throws BadBlockException In case of decryption error.
      */
     public Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, PGPException, BadBlockException {
+        this(in, key, passphrase, MINIMUM_BUFFER_SIZE);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param in         Crypt4GH <code>SeekableStream</code> to be decrypted.
+     * @param key        PGP private key.
+     * @param passphrase PGP key passphrase.
+     * @param bufferSize Size of the buffer to use, minimum 512.
+     * @throws IOException       In case of IO error.
+     * @throws PGPException      In case of decryption error.
+     * @throws BadBlockException In case of decryption error.
+     */
+    public Crypt4GHInputStream(SeekableStream in, String key, String passphrase, int bufferSize) throws IOException, PGPException, BadBlockException {
+        if (bufferSize < 512) {
+            throw new IOException("Minimum buffer size is " + MINIMUM_BUFFER_SIZE);
+        }
         Header header = HeaderFactory.getInstance().getHeader(in, key, passphrase);
         Record record = header.getEncryptedHeader().getRecords().iterator().next();
         long ciphertextStart = record.getCiphertextStart();
@@ -41,7 +59,7 @@ public class Crypt4GHInputStream extends SeekableStream {
             in.read(digest, 0, 32);
         }
         long dataStart = ciphertextStart + header.getUnencryptedHeader().getFullHeaderLength();
-        this.seekableStreamInput = new SeekableStreamInput(in, MINIMUM_BUFFER_SIZE, dataStart);
+        this.seekableStreamInput = new SeekableStreamInput(in, bufferSize, dataStart);
         this.encryptedStream = new PositionedCryptoInputStream(new Properties(), seekableStreamInput, record.getKey(), record.getIv(), dataStart);
         seek(0);
     }
