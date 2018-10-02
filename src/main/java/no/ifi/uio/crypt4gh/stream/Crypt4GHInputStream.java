@@ -33,7 +33,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      * @throws PGPException      In case of decryption error.
      * @throws BadBlockException In case of decryption error.
      */
-    public Crypt4GHInputStream(SeekableStream in, String key, String passphrase) throws IOException, PGPException, BadBlockException {
+    public Crypt4GHInputStream(SeekableStream in, String key, char[] passphrase) throws IOException, PGPException, BadBlockException {
         this(in, key, passphrase, MINIMUM_BUFFER_SIZE);
     }
 
@@ -48,7 +48,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      * @throws PGPException      In case of decryption error.
      * @throws BadBlockException In case of decryption error.
      */
-    public Crypt4GHInputStream(SeekableStream in, String key, String passphrase, int bufferSize) throws IOException, PGPException, BadBlockException {
+    public Crypt4GHInputStream(SeekableStream in, String key, char[] passphrase, int bufferSize) throws IOException, PGPException, BadBlockException {
         if (bufferSize < 512) {
             throw new IOException("Minimum buffer size is " + MINIMUM_BUFFER_SIZE);
         }

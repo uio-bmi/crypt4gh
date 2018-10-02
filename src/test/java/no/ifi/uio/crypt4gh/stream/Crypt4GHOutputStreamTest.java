@@ -125,8 +125,8 @@ public class Crypt4GHOutputStreamTest {
                 "-----END PGP PRIVATE KEY BLOCK-----\n";
     }
 
-    private String getPassphrase() {
-        return "fgpJuRRWZohCewVc";
+    private char[] getPassphrase() {
+        return "fgpJuRRWZohCewVc".toCharArray();
     }
 
 }
