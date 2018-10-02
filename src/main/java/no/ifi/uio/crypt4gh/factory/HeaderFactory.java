@@ -85,7 +85,7 @@ public class HeaderFactory {
      * @throws IOException       In case of IO error.
      * @throws BadBlockException In case of decryption error.
      */
-    public Header getHeader(byte[] headerBytes, String key, String passphrase) throws PGPException, IOException, BadBlockException {
+    public Header getHeader(byte[] headerBytes, String key, char[] passphrase) throws PGPException, IOException, BadBlockException {
         return getHeader(new ByteArrayInputStream(headerBytes), key, passphrase);
     }
 
@@ -100,7 +100,7 @@ public class HeaderFactory {
      * @throws IOException       In case of IO error.
      * @throws BadBlockException In case of decryption error.
      */
-    public Header getHeader(InputStream in, String key, String passphrase) throws IOException, PGPException, BadBlockException {
+    public Header getHeader(InputStream in, String key, char[] passphrase) throws IOException, PGPException, BadBlockException {
         UnencryptedHeader unencryptedHeader = getUnencryptedHeader(in);
         return new Header(unencryptedHeader, getEncryptedHeader(in, unencryptedHeader, key, passphrase));
     }
@@ -133,7 +133,7 @@ public class HeaderFactory {
      * @throws IOException       In case of IO error.
      * @throws BadBlockException In case of decryption error.
      */
-    protected EncryptedHeader getEncryptedHeader(InputStream in, UnencryptedHeader unencryptedHeader, String key, String passphrase) throws IOException, PGPException, BadBlockException {
+    protected EncryptedHeader getEncryptedHeader(InputStream in, UnencryptedHeader unencryptedHeader, String key, char[] passphrase) throws IOException, PGPException, BadBlockException {
         return getEncryptedHeader(in, unencryptedHeader, new Key(key, passphrase));
     }
 
@@ -156,6 +156,7 @@ public class HeaderFactory {
         decryptor.setVerificationRequired(false);
         ByteArrayOutputStream decryptedHeaderStream = new ByteArrayOutputStream();
         decryptor.decrypt(new ByteArrayInputStream(encryptedHeaderBytes), decryptedHeaderStream);
+        decryptor.clearSecrets();
         byte[] decryptedHeader = decryptedHeaderStream.toByteArray();
         long numberOfRecords = getInt(Arrays.copyOfRange(decryptedHeader, 0, 4));
         List<Record> records = new ArrayList<>();
