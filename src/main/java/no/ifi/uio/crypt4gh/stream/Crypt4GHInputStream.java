@@ -49,7 +49,7 @@ public class Crypt4GHInputStream extends SeekableStream {
      * @throws BadBlockException In case of decryption error.
      */
     public Crypt4GHInputStream(SeekableStream in, String key, char[] passphrase, int bufferSize) throws IOException, PGPException, BadBlockException {
-        if (bufferSize < 512) {
+        if (bufferSize < MINIMUM_BUFFER_SIZE) {
             throw new IOException("Minimum buffer size is " + MINIMUM_BUFFER_SIZE);
         }
         Header header = HeaderFactory.getInstance().getHeader(in, key, passphrase);
