@@ -1,7 +1,7 @@
-package no.ifi.uio.crypt4gh.stream;
+package no.uio.ifi.crypt4gh.stream;
 
-import no.ifi.uio.crypt4gh.factory.HeaderFactory;
-import no.ifi.uio.crypt4gh.pojo.EncryptionAlgorithm;
+import no.uio.ifi.crypt4gh.factory.HeaderFactory;
+import no.uio.ifi.crypt4gh.pojo.EncryptionAlgorithm;
 import org.apache.commons.crypto.stream.CtrCryptoOutputStream;
 import org.bouncycastle.openpgp.PGPException;
 import org.c02e.jpgpj.Encryptor;

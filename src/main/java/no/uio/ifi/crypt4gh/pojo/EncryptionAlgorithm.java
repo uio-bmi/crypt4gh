@@ -1,4 +1,4 @@
-package no.ifi.uio.crypt4gh.pojo;
+package no.uio.ifi.crypt4gh.pojo;
 
 import java.util.Arrays;
 

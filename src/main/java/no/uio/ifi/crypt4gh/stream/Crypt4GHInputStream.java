@@ -1,9 +1,9 @@
-package no.ifi.uio.crypt4gh.stream;
+package no.uio.ifi.crypt4gh.stream;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
-import no.ifi.uio.crypt4gh.factory.HeaderFactory;
-import no.ifi.uio.crypt4gh.pojo.Header;
-import no.ifi.uio.crypt4gh.pojo.Record;
+import no.uio.ifi.crypt4gh.factory.HeaderFactory;
+import no.uio.ifi.crypt4gh.pojo.Header;
+import no.uio.ifi.crypt4gh.pojo.Record;
 import org.apache.commons.crypto.stream.PositionedCryptoInputStream;
 import org.bouncycastle.jcajce.provider.util.BadBlockException;
 import org.bouncycastle.openpgp.PGPException;

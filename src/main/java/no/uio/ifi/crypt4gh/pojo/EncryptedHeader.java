@@ -1,4 +1,4 @@
-package no.ifi.uio.crypt4gh.pojo;
+package no.uio.ifi.crypt4gh.pojo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

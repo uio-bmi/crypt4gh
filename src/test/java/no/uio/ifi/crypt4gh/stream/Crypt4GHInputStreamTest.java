@@ -1,4 +1,4 @@
-package no.ifi.uio.crypt4gh.stream;
+package no.uio.ifi.crypt4gh.stream;
 
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;

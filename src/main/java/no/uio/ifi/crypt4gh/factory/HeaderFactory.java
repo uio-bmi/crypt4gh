@@ -1,6 +1,6 @@
-package no.ifi.uio.crypt4gh.factory;
+package no.uio.ifi.crypt4gh.factory;
 
-import no.ifi.uio.crypt4gh.pojo.*;
+import no.uio.ifi.crypt4gh.pojo.*;
 import org.bouncycastle.jcajce.provider.util.BadBlockException;
 import org.bouncycastle.openpgp.*;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
