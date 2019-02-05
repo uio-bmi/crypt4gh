@@ -2,6 +2,9 @@ package no.uio.ifi.crypt4gh.app;
 
 import org.apache.commons.cli.*;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * Console application for encrypting/decrypting files.
  */
@@ -20,6 +23,9 @@ public class Main {
      * @param args Command line arguments.
      */
     public static void main(String[] args) throws Exception {
+        Logger logger = Logger.getLogger("org.c02e.jpgpj");
+        logger.setLevel(Level.OFF);
+
         Options options = new Options();
 
         OptionGroup mainOptions = new OptionGroup();
@@ -45,8 +51,20 @@ public class Main {
                 KeyUtils.getInstance().generatePGPKeyPair(line.getOptionValue(GENERATE));
             } else if (line.hasOption(ENCRYPT)) {
                 if (!line.hasOption(KEY)) {
-                    System.err.println(KEY + " parameter can not be empty!");
+                    System.err.println("Missing argument for option: " + KEY);
+                    return;
                 }
+                Crypt4GHUtils.getInstance().encryptFile(line.getOptionValue(ENCRYPT),
+                        line.getOptionValue(KEY),
+                        line.hasOption(VERBOSE));
+            } else if (line.hasOption(DECRYPT)) {
+                if (!line.hasOption(KEY)) {
+                    System.err.println("Missing argument for option: " + KEY);
+                    return;
+                }
+                Crypt4GHUtils.getInstance().decryptFile(line.getOptionValue(DECRYPT),
+                        line.getOptionValue(KEY),
+                        line.hasOption(VERBOSE));
             }
         } catch (ParseException exp) {
             System.err.println(exp.getMessage());
