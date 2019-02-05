@@ -40,7 +40,9 @@ public class KeyUtils {
     }
 
     public void generatePGPKeyPair(String keyId) throws Exception {
-        char[] passphrase = System.console().readPassword("Enter the passphrase to lock the secret key: ");
+        ConsoleUtils consoleUtils = ConsoleUtils.getInstance();
+
+        char[] passphrase = consoleUtils.readPassword("Enter the passphrase to lock the secret key: ", 8);
         PGPKeyRingGenerator generator = createPGPKeyRingGenerator(keyId, passphrase);
 
         PGPPublicKeyRing pkr = generator.generatePublicKeyRing();
@@ -56,13 +58,12 @@ public class KeyUtils {
         byte[] armoredPublicBytes = armorByteArray(pubOut.toByteArray());
         byte[] armoredSecretBytes = armorByteArray(secOut.toByteArray());
 
-        ConsoleUtils consoleUtils = ConsoleUtils.getInstance();
         File pubFile = new File(keyId + ".pub.asc");
-        System.out.println(pubFile.getAbsolutePath());
         if (!pubFile.exists() || pubFile.exists() &&
                 consoleUtils.promptForConfirmation("Public key file already exists: do you want to overwrite it?")) {
             FileUtils.write(pubFile, new String(armoredPublicBytes), Charset.defaultCharset());
         }
+
         File secFile = new File(keyId + ".sec.asc");
         if (!secFile.exists() || secFile.exists() &&
                 consoleUtils.promptForConfirmation("Private key file already exists: do you want to overwrite it?")) {

@@ -27,4 +27,15 @@ public class ConsoleUtils {
         return confirm;
     }
 
+    public char[] readPassword(String prompt, int minLength) {
+        while (true) {
+            char[] password = System.console().readPassword(prompt);
+            if (password.length >= minLength) {
+                return password;
+            } else {
+                System.out.println("Passphrase is too short: min length is " + minLength);
+            }
+        }
+    }
+
 }
