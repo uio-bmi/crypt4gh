@@ -11,6 +11,8 @@ public class Main {
     public static final String ENCRYPT = "e";
     public static final String DECRYPT = "d";
     public static final String HELP = "h";
+    public static final String VERBOSE = "v";
+    public static final String KEY = "k";
 
     /**
      * Main method, entry-point to the application.
@@ -27,19 +29,27 @@ public class Main {
         mainOptions.addOption(new Option(HELP, "help", false, "print this message"));
         options.addOptionGroup(mainOptions);
 
-
-        options.addOption(new Option("k", "key", true, "PGP key to use"));
+        options.addOption(new Option(KEY, "key", true, "PGP key to use"));
+        options.addOption(new Option(VERBOSE, "verbose", false, "verbose mode"));
 
         CommandLineParser parser = new DefaultParser();
         try {
             CommandLine line = parser.parse(options, args);
+            if (line.getOptions().length == 0) {
+                printHelp(options);
+                return;
+            }
             if (line.hasOption(HELP)) {
                 printHelp(options);
             } else if (line.hasOption(GENERATE)) {
                 KeyUtils.getInstance().generatePGPKeyPair(line.getOptionValue(GENERATE));
+            } else if (line.hasOption(ENCRYPT)) {
+                if (!line.hasOption(KEY)) {
+                    System.err.println(KEY + " parameter can not be empty!");
+                }
             }
         } catch (ParseException exp) {
-            System.err.println("Wrong syntax: " + exp.getMessage());
+            System.err.println(exp.getMessage());
         }
     }
 
