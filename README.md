@@ -36,7 +36,7 @@ To include this library to your Maven project add following to the `pom.xml`:
 To install console app you can use the following script (assuming you are using `bash`):
 ```
 sudo curl -L "https://github.com/uio-bmi/crypt4gh/releases/download/v1.2.0/crypt4gh-1.2.0-shaded.jar" -o /usr/local/bin/crypt4gh.jar && \
-sudo echo $'#!/bin/bash\njava -jar /usr/local/bin/crypt4gh.jar "$@"' > /usr/local/bin/crypt4gh && \
+sudo echo $'#!/usr/bin/env bash\njava -jar /usr/local/bin/crypt4gh.jar "$@"' > /usr/local/bin/crypt4gh && \
 sudo chmod +x /usr/local/bin/crypt4gh
 ```
 
