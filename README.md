@@ -41,3 +41,19 @@ echo -e '#!/usr/bin/env bash\njava -jar' "$PREFIX/crypt4gh.jar" '$@' | sudo tee 
 sudo chmod +x "$PREFIX/crypt4gh"
 ```
 
+## Usage
+```
+$ crypt4gh 
+usage: crypt4gh [-d <arg> | -e <arg> | -g <arg> | -h]    [-k <arg>] [-v]
+
+Crypt4GH encryption/decryption tool
+
+ -d,--decrypt <arg>    decrypt the file (specify filename/filepath)
+ -e,--encrypt <arg>    encrypt the file (specify filename/filepath)
+ -g,--generate <arg>   generate PGP keypair (specify key ID)
+ -h,--help             print this message
+ -k,--key <arg>        PGP key to use
+ -v,--verbose          verbose mode
+
+Read more about the format at http://bit.ly/crypt4gh
+```
