@@ -66,7 +66,7 @@ public class Crypt4GHUtils {
         System.out.println("Decryption initialized...");
         if (verbose) {
             try (SeekableFileStream inputStream = new SeekableFileStream(dataInFile)) {
-                Header header = HeaderFactory.getInstance().getHeader(inputStream, key, passphrase);
+                Header header = HeaderFactory.getInstance().getHeader(inputStream, key, passphrase.clone());
                 Record record = header.getEncryptedHeader().getRecords().iterator().next();
                 String sessionKey = Hex.encodeHexString(record.getKey());
                 String iv = Hex.encodeHexString(record.getIv());
