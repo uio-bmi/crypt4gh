@@ -1,6 +1,9 @@
 package no.uio.ifi.crypt4gh.app;
 
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import no.uio.ifi.crypt4gh.factory.HeaderFactory;
+import no.uio.ifi.crypt4gh.pojo.Header;
+import no.uio.ifi.crypt4gh.pojo.Record;
 import no.uio.ifi.crypt4gh.stream.Crypt4GHInputStream;
 import no.uio.ifi.crypt4gh.stream.Crypt4GHOutputStream;
 import org.apache.commons.codec.binary.Hex;
@@ -60,10 +63,22 @@ public class Crypt4GHUtils {
         }
         String key = FileUtils.readFileToString(new File(keyFilePath), Charset.defaultCharset());
         char[] passphrase = System.console().readPassword("Enter the passphrase to unlock the secret key: ");
+        System.out.println("Decryption initialized...");
+        if (verbose) {
+            try (SeekableFileStream inputStream = new SeekableFileStream(dataInFile)) {
+                Header header = HeaderFactory.getInstance().getHeader(inputStream, key, passphrase);
+                Record record = header.getEncryptedHeader().getRecords().iterator().next();
+                String sessionKey = Hex.encodeHexString(record.getKey());
+                String iv = Hex.encodeHexString(record.getIv());
+                System.out.println("AES session key: " + sessionKey);
+                System.out.println("AES IV: " + iv);
+            } catch (PassphraseException e) {
+                System.err.println(e.getMessage());
+            }
+        }
         try (SeekableFileStream inputStream = new SeekableFileStream(dataInFile);
              OutputStream outputStream = new FileOutputStream(dataOutFile);
              Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(inputStream, key, passphrase)) {
-            System.out.println("Decryption initialized...");
             IOUtils.copyLarge(crypt4GHInputStream, outputStream);
             System.out.println("Done: " + dataOutFile.getAbsolutePath());
         } catch (PassphraseException e) {
