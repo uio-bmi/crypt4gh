@@ -23,7 +23,7 @@ public class HeaderFactoryTest {
         Collection<String> keyIds = HeaderFactory.getInstance().getKeyIds(headerBytes);
         Assert.assertNotNull(keyIds);
         Assert.assertEquals(1, keyIds.size());
-        Assert.assertEquals("130560167a9315f9", keyIds.iterator().next());
+        Assert.assertEquals("130560167A9315F9", keyIds.iterator().next());
     }
 
 }

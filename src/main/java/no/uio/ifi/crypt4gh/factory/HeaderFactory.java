@@ -65,7 +65,8 @@ public class HeaderFactory {
         while (iterator.hasNext()) {
             Object entry = iterator.next();
             PGPPublicKeyEncryptedData pgpPublicKeyEncryptedData = (PGPPublicKeyEncryptedData) entry;
-            ids.add(Long.toHexString(pgpPublicKeyEncryptedData.getKeyID()));
+            // https://stackoverflow.com/questions/35335891/long-to-hex-string-number-of-characters/35335975#35335975
+            ids.add(String.format("%016X", pgpPublicKeyEncryptedData.getKeyID()));
         }
         if (ids.isEmpty()) {
             throw new PGPException("KeyID not found in the encrypted part of the header.");
