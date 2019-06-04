@@ -15,16 +15,18 @@ To include this library to your Maven project add following to the `pom.xml`:
 
     <dependencies>
         <dependency>
-            <groupId>no.uio.ifi</groupId>
+            <groupId>com.github.uio-bmi</groupId>
             <artifactId>crypt4gh</artifactId>
-            <version>1.0.0</version>
+            <version>v1.2.1</version>
         </dependency>
     </dependencies>
 
+...
+
     <repositories>
         <repository>
-            <id>nexus.norgene.no</id>
-            <url>https://nexus.norgene.no/repository/maven-releases/</url>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
         </repository>
     </repositories>
 
