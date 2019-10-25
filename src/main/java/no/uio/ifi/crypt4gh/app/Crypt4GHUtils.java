@@ -1,87 +1,90 @@
 package no.uio.ifi.crypt4gh.app;
 
-import htsjdk.samtools.seekablestream.SeekableFileStream;
-import no.uio.ifi.crypt4gh.factory.HeaderFactory;
-import no.uio.ifi.crypt4gh.pojo.Header;
-import no.uio.ifi.crypt4gh.pojo.Record;
 import no.uio.ifi.crypt4gh.stream.Crypt4GHInputStream;
 import no.uio.ifi.crypt4gh.stream.Crypt4GHOutputStream;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FileUtils;
+import no.uio.ifi.crypt4gh.util.KeyUtils;
 import org.apache.commons.io.IOUtils;
-import org.bouncycastle.jcajce.provider.util.BadBlockException;
-import org.bouncycastle.openpgp.PGPException;
-import org.c02e.jpgpj.PassphraseException;
 
 import java.io.*;
-import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.util.HashSet;
+import java.util.Set;
 
-public class Crypt4GHUtils {
+/**
+ * Encryption/decryption utility class, not a public API.
+ */
+class Crypt4GHUtils {
 
     private static Crypt4GHUtils ourInstance = new Crypt4GHUtils();
 
-    public static Crypt4GHUtils getInstance() {
+    static Crypt4GHUtils getInstance() {
         return ourInstance;
     }
+
+    private KeyUtils keyUtils = KeyUtils.getInstance();
 
     private Crypt4GHUtils() {
     }
 
-    public void encryptFile(String dataFilePath, String keyFilePath, boolean verbose) throws IOException, PGPException {
+    void generateX25519KeyPair(String keyName) throws Exception {
+        KeyUtils keyUtils = KeyUtils.getInstance();
+        KeyPair keyPair = keyUtils.generateKeyPair();
+        ConsoleUtils consoleUtils = ConsoleUtils.getInstance();
+        File pubFile = new File(keyName + ".pub.pem");
+        if (!pubFile.exists() || pubFile.exists() &&
+                consoleUtils.promptForConfirmation("Public key file already exists: do you want to overwrite it?")) {
+            keyUtils.writePEMFile(pubFile, keyPair.getPublic());
+        }
+        File secFile = new File(keyName + ".sec.pem");
+        if (!secFile.exists() || secFile.exists() &&
+                consoleUtils.promptForConfirmation("Private key file already exists: do you want to overwrite it?")) {
+            keyUtils.writePEMFile(secFile, keyPair.getPrivate());
+        }
+        Set<PosixFilePermission> perms = new HashSet<>();
+        perms.add(PosixFilePermission.OWNER_READ);
+        perms.add(PosixFilePermission.OWNER_WRITE);
+        Files.setPosixFilePermissions(secFile.toPath(), perms);
+    }
+
+    void encryptFile(String dataFilePath, String privateKeyFilePath, String publicKeyFilePath) throws IOException, GeneralSecurityException {
         File dataInFile = new File(dataFilePath);
         File dataOutFile = new File(dataFilePath + ".enc");
         if (dataOutFile.exists() && !ConsoleUtils.getInstance().promptForConfirmation(dataOutFile.getAbsolutePath() + " already exists. Overwrite?")) {
             return;
         }
-        String key = FileUtils.readFileToString(new File(keyFilePath), Charset.defaultCharset());
-        byte[] digest;
-        try (InputStream inputStream = new FileInputStream(dataInFile)) {
-            digest = DigestUtils.sha256(inputStream);
-        }
-
+        PrivateKey privateKey = keyUtils.readPEMFile(new File(privateKeyFilePath), PrivateKey.class);
+        PublicKey publicKey = keyUtils.readPEMFile(new File(publicKeyFilePath), PublicKey.class);
         try (InputStream inputStream = new FileInputStream(dataInFile);
              OutputStream outputStream = new FileOutputStream(dataOutFile);
-             Crypt4GHOutputStream crypt4GHOutputStream = new Crypt4GHOutputStream(outputStream, key, digest)) {
-            if (verbose) {
-                String sessionKey = Hex.encodeHexString(crypt4GHOutputStream.getSessionKeyBytes());
-                String iv = Hex.encodeHexString(crypt4GHOutputStream.getIvBytes());
-                System.out.println("AES session key: " + sessionKey);
-                System.out.println("AES IV: " + iv);
-            }
+             Crypt4GHOutputStream crypt4GHOutputStream = new Crypt4GHOutputStream(outputStream, privateKey, publicKey)) {
             System.out.println("Encryption initialized...");
             IOUtils.copyLarge(inputStream, crypt4GHOutputStream);
             System.out.println("Done: " + dataOutFile.getAbsolutePath());
+        } catch (GeneralSecurityException e) {
+            System.err.println(e.getMessage());
+            dataOutFile.delete();
         }
     }
 
-    public void decryptFile(String dataFilePath, String keyFilePath, boolean verbose) throws IOException, PGPException, BadBlockException {
+    void decryptFile(String dataFilePath, String privateKeyFilePath) throws IOException, GeneralSecurityException {
         File dataInFile = new File(dataFilePath);
         File dataOutFile = new File(dataFilePath + ".dec");
         if (dataOutFile.exists() && !ConsoleUtils.getInstance().promptForConfirmation(dataOutFile.getAbsolutePath() + " already exists. Overwrite?")) {
             return;
         }
-        String key = FileUtils.readFileToString(new File(keyFilePath), Charset.defaultCharset());
-        char[] passphrase = System.console().readPassword("Enter the passphrase to unlock the secret key: ");
+        PrivateKey privateKey = keyUtils.readPEMFile(new File(privateKeyFilePath), PrivateKey.class);
         System.out.println("Decryption initialized...");
-        if (verbose) {
-            try (SeekableFileStream inputStream = new SeekableFileStream(dataInFile)) {
-                Header header = HeaderFactory.getInstance().getHeader(inputStream, key, passphrase.clone());
-                Record record = header.getEncryptedHeader().getRecords().iterator().next();
-                String sessionKey = Hex.encodeHexString(record.getKey());
-                String iv = Hex.encodeHexString(record.getIv());
-                System.out.println("AES session key: " + sessionKey);
-                System.out.println("AES IV: " + iv);
-            } catch (PassphraseException e) {
-                System.err.println(e.getMessage());
-            }
-        }
-        try (SeekableFileStream inputStream = new SeekableFileStream(dataInFile);
+        try (FileInputStream inputStream = new FileInputStream(dataInFile);
              OutputStream outputStream = new FileOutputStream(dataOutFile);
-             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(inputStream, key, passphrase)) {
+             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(inputStream, privateKey)) {
             IOUtils.copyLarge(crypt4GHInputStream, outputStream);
             System.out.println("Done: " + dataOutFile.getAbsolutePath());
-        } catch (PassphraseException e) {
+        } catch (GeneralSecurityException e) {
             System.err.println(e.getMessage());
             dataOutFile.delete();
         }

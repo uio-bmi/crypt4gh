@@ -2,18 +2,21 @@ package no.uio.ifi.crypt4gh.app;
 
 import java.io.Console;
 
-public class ConsoleUtils {
+/**
+ * Console utility class, not a public API.
+ */
+class ConsoleUtils {
 
     private static ConsoleUtils ourInstance = new ConsoleUtils();
 
-    public static ConsoleUtils getInstance() {
+    static ConsoleUtils getInstance() {
         return ourInstance;
     }
 
     private ConsoleUtils() {
     }
 
-    public boolean promptForConfirmation(String prompt) {
+    boolean promptForConfirmation(String prompt) {
         Console console = System.console();
         Boolean confirm = null;
         while (confirm == null) {
@@ -27,7 +30,7 @@ public class ConsoleUtils {
         return confirm;
     }
 
-    public char[] readPassword(String prompt, int minLength) {
+    char[] readPassword(String prompt, int minLength) {
         while (true) {
             char[] password = System.console().readPassword(prompt);
             if (password.length >= minLength) {

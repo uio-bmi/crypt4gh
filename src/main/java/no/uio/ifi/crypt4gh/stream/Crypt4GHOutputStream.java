@@ -1,119 +1,94 @@
 package no.uio.ifi.crypt4gh.stream;
 
-import no.uio.ifi.crypt4gh.factory.HeaderFactory;
-import no.uio.ifi.crypt4gh.pojo.EncryptionAlgorithm;
-import org.apache.commons.crypto.stream.CtrCryptoOutputStream;
-import org.bouncycastle.openpgp.PGPException;
-import org.c02e.jpgpj.Encryptor;
-import org.c02e.jpgpj.HashingAlgorithm;
-import org.c02e.jpgpj.Key;
+import no.uio.ifi.crypt4gh.pojo.body.Segment;
+import no.uio.ifi.crypt4gh.pojo.header.*;
+import no.uio.ifi.crypt4gh.util.KeyUtils;
 
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.security.SecureRandom;
+import javax.crypto.SecretKey;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.security.GeneralSecurityException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Arrays;
-import java.util.Properties;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import static no.uio.ifi.crypt4gh.pojo.body.Segment.UNENCRYPTED_DATA_SEGMENT_SIZE;
 
 /**
- * <code>OutputStream</code> wrapper to support Crypt4GH on-the-fly encryption.
+ * Crypt4GHOutputStream that wraps existing OutputStream.
  */
 public class Crypt4GHOutputStream extends FilterOutputStream {
 
-    public static final String PROTOCOL_NAME = "crypt4gh";
-    public static final int VERSION = 1;
-    public static final int KEY_STRENGTH = 256;
-    public static final int IV_LENGTH = 16;
-    public static final int NUMBER_OF_RECORDS = 1;
-    public static final long PLAINTEXT_START = 0;
-    public static final long PLAINTEXT_END = 0xFFFFFFFF;
-    public static final long CIPHERTEXT_START = 0;
-    public static final long CTR_OFFSET = 0;
-
-    private byte[] sessionKeyBytes;
-    private byte[] ivBytes;
+    private byte[] buffer = new byte[UNENCRYPTED_DATA_SEGMENT_SIZE];
+    private int bytesCached;
+    private DataEncryptionParameters dataEncryptionParameters;
 
     /**
-     * Constructor that wraps OutputStream.
+     * Constructs the Crypt4GHOutputStream by wrapping existing OutputStream.
      *
-     * @param out OutputStream to encrypt.
-     * @param key PGP public key.
-     * @throws IOException  In case of IO error.
-     * @throws PGPException In case of PGP error.
+     * @param out              Existing OutputStream.
+     * @param writerPrivateKey Sender's private key.
+     * @param readerPublicKey  Recipient's public key.
+     * @throws IOException              In case the Crypt4GH header can't be read from the underlying OutputStream.
+     * @throws GeneralSecurityException In case the Crypt4GH header is malformed.
      */
-    public Crypt4GHOutputStream(OutputStream out, String key) throws IOException, PGPException {
-        this(out, key, null);
-    }
-
-    /**
-     * Constructor that wraps OutputStream and adds SHA256 digest to it.
-     *
-     * @param out    OutputStream to encrypt.
-     * @param key    PGP public key.
-     * @param digest SHA256 digest.
-     * @throws IOException  In case of IO error.
-     * @throws PGPException In case of PGP error.
-     */
-    public Crypt4GHOutputStream(OutputStream out, String key, byte[] digest) throws IOException, PGPException {
+    public Crypt4GHOutputStream(OutputStream out, PrivateKey writerPrivateKey, PublicKey readerPublicKey) throws IOException, GeneralSecurityException {
         super(out);
-
-        SecureRandom secureRandom = new SecureRandom();
-        sessionKeyBytes = new byte[KEY_STRENGTH / 8];
-        secureRandom.nextBytes(sessionKeyBytes);
-        ivBytes = new byte[IV_LENGTH];
-        secureRandom.nextBytes(ivBytes);
-
-        long ciphertextStart = CIPHERTEXT_START;
-        if (digest != null) {
-            ciphertextStart = digest.length;
+        KeyUtils keyUtils = KeyUtils.getInstance();
+        SecretKey dataKey = keyUtils.generateSessionKey();
+        DataEncryptionParameters dataEncryptionParameters = new ChaCha20IETFPoly1305EncryptionParameters(dataKey);
+        HeaderPacket headerPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(dataEncryptionParameters, writerPrivateKey, readerPublicKey);
+        List<HeaderPacket> headerPackets = Collections.singletonList(headerPacket);
+        Header header = new Header(headerPackets.size(), headerPackets);
+        out.write(header.serialize());
+        Collection<DataEncryptionParameters> dataEncryptionParametersList = header.getDataEncryptionParametersList();
+        if (dataEncryptionParametersList.isEmpty()) {
+            throw new GeneralSecurityException("Data Encryption Parameters not found in the Header");
         }
-
-        ByteArrayOutputStream decryptedHeaderOutputStream = new ByteArrayOutputStream();
-        decryptedHeaderOutputStream.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(NUMBER_OF_RECORDS).array());
-        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(PLAINTEXT_START).array());
-        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(PLAINTEXT_END).array());
-        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(ciphertextStart).array());
-        decryptedHeaderOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(CTR_OFFSET).array());
-        decryptedHeaderOutputStream.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(EncryptionAlgorithm.AES_256_CTR.getCode()).array());
-        decryptedHeaderOutputStream.write(sessionKeyBytes);
-        decryptedHeaderOutputStream.write(ivBytes);
-        ByteArrayInputStream decryptedHeaderInputStream = new ByteArrayInputStream(decryptedHeaderOutputStream.toByteArray());
-
-        ByteArrayOutputStream encryptedHeaderOutputStream = new ByteArrayOutputStream();
-        Encryptor encryptor = new Encryptor(new Key(key));
-        encryptor.setSigningAlgorithm(HashingAlgorithm.Unsigned);
-        encryptor.encrypt(decryptedHeaderInputStream, encryptedHeaderOutputStream);
-        encryptedHeaderOutputStream.close();
-        byte[] encryptedHeader = encryptedHeaderOutputStream.toByteArray();
-
-        out.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).put(PROTOCOL_NAME.getBytes()).array());
-        out.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(VERSION).array());
-        out.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(HeaderFactory.UNENCRYPTED_HEADER_LENGTH + encryptedHeader.length).array());
-        out.write(encryptedHeader);
-
-        if (digest != null) {
-            out.write(digest);
-        }
-
-        this.out = new CtrCryptoOutputStream(new Properties(), out, sessionKeyBytes, ivBytes);
+        this.dataEncryptionParameters = dataEncryptionParametersList.iterator().next();
     }
 
     /**
-     * Returns AES passphrase used for encryption.
+     * Writes a byte to an internal buffer and flushes this buffer when it get's full.
      *
-     * @return AES session key.
+     * @param b A byte to write.
+     * @throws IOException In case the byte can't be written or the buffer can't be flushed.
      */
-    public byte[] getSessionKeyBytes() {
-        return Arrays.copyOf(sessionKeyBytes, sessionKeyBytes.length);
+    @Override
+    public void write(int b) throws IOException {
+        if (bytesCached == buffer.length) {
+            try {
+                flushBuffer();
+            } catch (GeneralSecurityException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        buffer[bytesCached++] = (byte) b; // it's actually always `byte`, not `int`
+    }
+
+    protected void flushBuffer() throws IOException, GeneralSecurityException {
+        Segment segment = Segment.create(Arrays.copyOfRange(buffer, 0, bytesCached), dataEncryptionParameters);
+        out.write(segment.serialize());
+        bytesCached = 0;
     }
 
     /**
-     * Returns AES IV used for encryption.
+     * Flushes the internal buffer before flushing the underlying stream.
      *
-     * @return AES initialization vector.
+     * @throws IOException In case if the buffer or underlying stream can't be flushed.
      */
-    public byte[] getIvBytes() {
-        return Arrays.copyOf(ivBytes, ivBytes.length);
+    @Override
+    public void flush() throws IOException {
+        try {
+            flushBuffer();
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException(e);
+        }
+        super.flush();
     }
 
 }

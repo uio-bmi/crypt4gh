@@ -1,91 +1,67 @@
 package no.uio.ifi.crypt4gh.stream;
 
-import htsjdk.samtools.seekablestream.SeekableStream;
-import no.uio.ifi.crypt4gh.factory.HeaderFactory;
-import no.uio.ifi.crypt4gh.pojo.Header;
-import no.uio.ifi.crypt4gh.pojo.Record;
-import org.apache.commons.crypto.stream.PositionedCryptoInputStream;
-import org.bouncycastle.jcajce.provider.util.BadBlockException;
-import org.bouncycastle.openpgp.PGPException;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.ToString;
+import no.uio.ifi.crypt4gh.pojo.header.DataEditList;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
-import java.util.Properties;
+import java.io.InputStream;
+import java.security.GeneralSecurityException;
+import java.security.PrivateKey;
+import java.util.ArrayDeque;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Queue;
 
 /**
- * <code>SeekableStream</code> wrapper to support Crypt4GH on-the-fly decryption.
+ * Crypt4GHInputStream that wraps existing InputStream.
  */
-public class Crypt4GHInputStream extends SeekableStream {
+public class Crypt4GHInputStream extends FilterInputStream {
 
-    public static final int MINIMUM_BUFFER_SIZE = 512;
-
-    private final SeekableStreamInput seekableStreamInput;
-    private final PositionedCryptoInputStream encryptedStream;
-
-    private final byte[] digest = new byte[32];
+    private boolean useDataEditList;
+    private Queue<DataEditListEntry> lengths = new ArrayDeque<>();
+    private long bytesRead;
 
     /**
-     * Constructor.
+     * Constructs Crypt4GHInputStream that wraps existing InputStream.
      *
-     * @param in         Crypt4GH <code>SeekableStream</code> to be decrypted.
-     * @param key        PGP private key.
-     * @param passphrase PGP key passphrase.
-     * @throws IOException       In case of IO error.
-     * @throws PGPException      In case of decryption error.
-     * @throws BadBlockException In case of decryption error.
+     * @param in               Existing InputStream.
+     * @param readerPrivateKey Recipient's private key.
+     * @throws IOException              In case the Crypt4GH header can't be read from the underlying InputStream.
+     * @throws GeneralSecurityException In case the Crypt4GH header can't be deserialized.
      */
-    public Crypt4GHInputStream(SeekableStream in, String key, char[] passphrase) throws IOException, PGPException, BadBlockException {
-        this(in, key, passphrase, MINIMUM_BUFFER_SIZE);
+    public Crypt4GHInputStream(InputStream in, PrivateKey readerPrivateKey) throws IOException, GeneralSecurityException {
+        super(new Crypt4GHInputStreamInternal(in, readerPrivateKey));
+        Optional<DataEditList> dataEditListOptional = ((Crypt4GHInputStreamInternal) this.in).getDataEditList();
+        this.useDataEditList = dataEditListOptional.isPresent();
+        long[] lengthsArray = dataEditListOptional.map(DataEditList::getLengths).orElse(new long[]{});
+        boolean skip = true;
+        for (long length : lengthsArray) {
+            lengths.add(new DataEditListEntry(length, skip));
+            skip = !skip;
+        }
     }
 
     /**
-     * Constructor.
+     * Constructs Crypt4GHInputStream that wraps existing InputStream with DataEditList.
      *
-     * @param in         Crypt4GH <code>SeekableStream</code> to be decrypted.
-     * @param key        PGP private key.
-     * @param passphrase PGP key passphrase.
-     * @param bufferSize Size of the buffer to use, minimum 512.
-     * @throws IOException       In case of IO error.
-     * @throws PGPException      In case of decryption error.
-     * @throws BadBlockException In case of decryption error.
+     * @param in               Existing InputStream.
+     * @param readerPrivateKey Recipient's private key.
+     * @param dataEditList     DataEditList
+     * @throws IOException              In case the Crypt4GH header can't be read from the underlying InputStream.
+     * @throws GeneralSecurityException In case the Crypt4GH header can't be deserialized.
      */
-    public Crypt4GHInputStream(SeekableStream in, String key, char[] passphrase, int bufferSize) throws IOException, PGPException, BadBlockException {
-        if (bufferSize < MINIMUM_BUFFER_SIZE) {
-            throw new IOException("Minimum buffer size is " + MINIMUM_BUFFER_SIZE);
+    public Crypt4GHInputStream(InputStream in, PrivateKey readerPrivateKey, DataEditList dataEditList) throws IOException, GeneralSecurityException {
+        super(new Crypt4GHInputStreamInternal(in, readerPrivateKey));
+        this.useDataEditList = true;
+        long[] lengthsArray = dataEditList.getLengths();
+        boolean skip = true;
+        for (long length : lengthsArray) {
+            this.lengths.add(new DataEditListEntry(length, skip));
+            skip = !skip;
         }
-        Header header = HeaderFactory.getInstance().getHeader(in, key, passphrase);
-        Record record = header.getEncryptedHeader().getRecords().iterator().next();
-        long ciphertextStart = record.getCiphertextStart();
-        if (ciphertextStart != 0) { // Check if the file contains digest
-            in.read(digest, 0, 32);
-        }
-        long dataStart = ciphertextStart + header.getUnencryptedHeader().getFullHeaderLength();
-        this.seekableStreamInput = new SeekableStreamInput(in, bufferSize, dataStart);
-        this.encryptedStream = new PositionedCryptoInputStream(new Properties(), seekableStreamInput, record.getKey(), record.getIv(), dataStart);
-        seek(0);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long length() {
-        return this.seekableStreamInput.length();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long position() throws IOException {
-        return this.seekableStreamInput.position();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void seek(long position) throws IOException {
-        this.encryptedStream.seek(position);
     }
 
     /**
@@ -93,48 +69,129 @@ public class Crypt4GHInputStream extends SeekableStream {
      */
     @Override
     public int read() throws IOException {
-        return this.encryptedStream.read();
+        return useDataEditList ? readWithDataEditList() : in.read();
+    }
+
+    private synchronized int readWithDataEditList() throws IOException {
+        if (!lengths.isEmpty()) {
+            DataEditListEntry dataEditListEntry = lengths.peek();
+            if (dataEditListEntry.skip) {
+                in.skip(dataEditListEntry.length);
+                lengths.remove();
+            }
+        }
+        if (!lengths.isEmpty()) {
+            DataEditListEntry dataEditListEntry = lengths.peek();
+            long length = dataEditListEntry.length;
+            if (bytesRead == length) {
+                lengths.remove();
+                bytesRead = 0;
+                return readWithDataEditList();
+            } else {
+                bytesRead++;
+                return in.read();
+            }
+        }
+        return lengths.isEmpty() ? -1 : in.read();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int read(byte[] buffer, int offset, int length) throws IOException {
-        return this.encryptedStream.read(buffer, offset, length);
+    public long skip(long n) throws IOException {
+        return useDataEditList ? skipWithDataEditList(n) : in.skip(n);
+    }
+
+    private synchronized long skipWithDataEditList(long n) throws IOException {
+        long bytesSkipped = 0;
+        if (!lengths.isEmpty()) {
+            DataEditListEntry dataEditListEntry = lengths.peek();
+            if (dataEditListEntry.skip) {
+                in.skip(dataEditListEntry.length);
+                lengths.remove();
+            } else {
+                long length = dataEditListEntry.length;
+                if (bytesRead == length) {
+                    lengths.remove();
+                    bytesRead = 0;
+                } else {
+                    long bytesLeftToRead = length - bytesRead;
+                    if (n <= bytesLeftToRead) {
+                        bytesRead += n;
+                        return in.skip(n);
+                    } else {
+                        bytesSkipped += in.skip(bytesLeftToRead);
+                        n -= bytesLeftToRead;
+                        lengths.remove();
+                        bytesRead = 0;
+                    }
+                }
+            }
+        }
+        while (!lengths.isEmpty() && n != 0) {
+            DataEditListEntry dataEditListEntry = lengths.peek();
+            if (dataEditListEntry.skip) {
+                in.skip(dataEditListEntry.length);
+                lengths.remove();
+            } else {
+                long length = dataEditListEntry.length;
+                if (n <= length) {
+                    long bytesSkippedJustNow = in.skip(n);
+                    bytesRead += bytesSkippedJustNow;
+                    bytesSkipped += bytesSkippedJustNow;
+                    return bytesSkipped;
+                } else {
+                    bytesSkipped += in.skip(length);
+                    n -= length;
+                    lengths.remove();
+                }
+            }
+        }
+        return bytesSkipped;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void close() throws IOException {
-        this.encryptedStream.close();
+    public int read(byte[] b, int off, int len) throws IOException {
+        /*
+            Reusing default `InputStream`'s implementation, because `FilterStream`'s implementation doesn't fit
+         */
+        Objects.checkFromIndexSize(off, len, b.length);
+        if (len == 0) {
+            return 0;
+        }
+
+        int c = read();
+        if (c == -1) {
+            return -1;
+        }
+        b[off] = (byte) c;
+
+        int i = 1;
+        try {
+            for (; i < len; i++) {
+                c = read();
+                if (c == -1) {
+                    break;
+                }
+                b[off + i] = (byte) c;
+            }
+        } catch (IOException ee) {
+        }
+        return i;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean eof() throws IOException {
-        return this.seekableStreamInput.eof();
-    }
+    @ToString
+    @AllArgsConstructor
+    @Data
+    private static class DataEditListEntry {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getSource() {
-        return this.seekableStreamInput.getSource();
-    }
+        private long length;
+        private boolean skip;
 
-    /**
-     * Utility method to get SHA256 digest of the raw data.
-     *
-     * @return SHA256 digest of the raw data.
-     */
-    public byte[] getDigest() {
-        return digest;
     }
 
 }
