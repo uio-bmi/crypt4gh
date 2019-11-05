@@ -19,6 +19,7 @@ public class Main {
      * Main method, entry-point to the application.
      *
      * @param args Command line arguments.
+     * @throws Exception If there's some kind of an error.
      */
     public static void main(String[] args) throws Exception {
         Options options = new Options();
