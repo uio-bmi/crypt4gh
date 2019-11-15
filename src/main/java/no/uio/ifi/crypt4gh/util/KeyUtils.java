@@ -221,15 +221,30 @@ public class KeyUtils {
      * @throws IOException              If the file can't be read.
      * @throws GeneralSecurityException If the key can't be constructed from the given file.
      */
-    @SuppressWarnings("unchecked")
     public <T> T readPEMFile(File keyFile, Class<T> keyType) throws IOException, GeneralSecurityException {
-        KeyFactory keyFactory = KeyFactory.getInstance(X25519);
         String keyLines = FileUtils.readFileToString(keyFile, Charset.defaultCharset());
+        return readKey(keyLines, keyType);
+    }
+
+    /**
+     * Reads key from string (either public key or private key). Can be both: OpenSSL format or just the bytes representation.
+     *
+     * @param keyMaterial Key contents.
+     * @param keyType     Type of the key: either PublicKey.class or PrivateKey.class
+     * @param <T>         PublicKey or PrivateKey, depending on the second parameter.
+     * @return Public or Private key correspondingly.
+     * @throws GeneralSecurityException If the key can't be constructed from the given file.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T readKey(String keyMaterial, Class<T> keyType) throws GeneralSecurityException {
+        KeyFactory keyFactory = KeyFactory.getInstance(X25519);
         if (keyType.isAssignableFrom(PublicKey.class)) {
-            String keyLine = keyLines
+            String keyLine = keyMaterial
                     .replace(BEGIN_PUBLIC_KEY, "")
                     .replace(END_PUBLIC_KEY, "")
-                    .replace(System.lineSeparator(), "");
+                    .replace(System.lineSeparator(), "")
+                    .replace(" ", "")
+                    .trim();
             byte[] decodedKey = Base64.getDecoder().decode(keyLine);
             try {
                 return (T) keyFactory.generatePublic(new X509EncodedKeySpec(decodedKey));
@@ -238,10 +253,12 @@ public class KeyUtils {
             }
         }
         if (keyType.isAssignableFrom(PrivateKey.class)) {
-            String keyLine = keyLines
+            String keyLine = keyMaterial
                     .replace(BEGIN_PRIVATE_KEY, "")
                     .replace(END_PRIVATE_KEY, "")
-                    .replace(System.lineSeparator(), "");
+                    .replace(System.lineSeparator(), "")
+                    .replace(" ", "")
+                    .trim();
             byte[] decodedKey = Base64.getDecoder().decode(keyLine);
             try {
                 return (T) keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decodedKey));
