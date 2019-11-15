@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
 import no.uio.ifi.crypt4gh.pojo.header.DataEditList;
+import no.uio.ifi.crypt4gh.pojo.header.Header;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -62,6 +63,15 @@ public class Crypt4GHInputStream extends FilterInputStream {
             this.lengths.add(new DataEditListEntry(length, skip));
             skip = !skip;
         }
+    }
+
+    /**
+     * Gets header.
+     *
+     * @return Crypt4GH full header.
+     */
+    public Header getHeader() {
+        return ((Crypt4GHInputStreamInternal) in).getHeader();
     }
 
     /**

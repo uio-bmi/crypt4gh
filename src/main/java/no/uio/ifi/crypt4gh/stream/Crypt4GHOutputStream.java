@@ -23,6 +23,7 @@ import static no.uio.ifi.crypt4gh.pojo.body.Segment.UNENCRYPTED_DATA_SEGMENT_SIZ
  */
 public class Crypt4GHOutputStream extends FilterOutputStream {
 
+    private Header header;
     private byte[] buffer = new byte[UNENCRYPTED_DATA_SEGMENT_SIZE];
     private int bytesCached;
     private DataEncryptionParameters dataEncryptionParameters;
@@ -43,13 +44,22 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
         DataEncryptionParameters dataEncryptionParameters = new ChaCha20IETFPoly1305EncryptionParameters(dataKey);
         HeaderPacket headerPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(dataEncryptionParameters, writerPrivateKey, readerPublicKey);
         List<HeaderPacket> headerPackets = Collections.singletonList(headerPacket);
-        Header header = new Header(headerPackets.size(), headerPackets);
+        this.header = new Header(headerPackets.size(), headerPackets);
         out.write(header.serialize());
         Collection<DataEncryptionParameters> dataEncryptionParametersList = header.getDataEncryptionParametersList();
         if (dataEncryptionParametersList.isEmpty()) {
             throw new GeneralSecurityException("Data Encryption Parameters not found in the Header");
         }
         this.dataEncryptionParameters = dataEncryptionParametersList.iterator().next();
+    }
+
+    /**
+     * Gets header.
+     *
+     * @return Crypt4GH full header.
+     */
+    public Header getHeader() {
+        return header;
     }
 
     /**

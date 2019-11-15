@@ -22,6 +22,7 @@ import static no.uio.ifi.crypt4gh.pojo.body.Segment.UNENCRYPTED_DATA_SEGMENT_SIZ
  */
 class Crypt4GHInputStreamInternal extends FilterInputStream {
 
+    private Header header;
     private int[] buffer;
     private int bytesRead;
     private Collection<DataEncryptionParameters> dataEncryptionParametersList;
@@ -34,7 +35,7 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
      */
     Crypt4GHInputStreamInternal(InputStream in, PrivateKey readerPrivateKey) throws IOException, GeneralSecurityException {
         super(in);
-        Header header = new Header(in, readerPrivateKey);
+        this.header = new Header(in, readerPrivateKey);
         this.dataEncryptionParametersList = header.getDataEncryptionParametersList();
         if (dataEncryptionParametersList.isEmpty()) {
             throw new GeneralSecurityException("Data Encryption Parameters not found in the Header");
@@ -51,6 +52,15 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
 
     Optional<DataEditList> getDataEditList() {
         return dataEditList;
+    }
+
+    /**
+     * Gets header.
+     *
+     * @return Crypt4GH full header.
+     */
+    Header getHeader() {
+        return header;
     }
 
     /**
