@@ -8,7 +8,6 @@ import no.uio.ifi.crypt4gh.pojo.Crypt4GHEntity;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -23,9 +22,9 @@ public class DataEditList extends EncryptableHeaderPacket {
     private int numberLengths;
     private long[] lengths;
 
-    public DataEditList(int numberLengths, long[] lengths) {
+    public DataEditList(long[] lengths) {
         this.packetType = HeaderPacketType.DATA_EDIT_LIST;
-        this.numberLengths = numberLengths;
+        this.numberLengths = lengths.length;
         this.lengths = lengths;
     }
 
@@ -34,7 +33,7 @@ public class DataEditList extends EncryptableHeaderPacket {
         this.numberLengths = Crypt4GHEntity.getInt(inputStream.readNBytes(4));
         this.lengths = new long[numberLengths];
         for (int i = 0; i < numberLengths; i++) {
-            lengths[i] = new BigInteger(inputStream.readNBytes(8)).longValue();
+            lengths[i] = Crypt4GHEntity.getLong(inputStream.readNBytes(8));
         }
     }
 

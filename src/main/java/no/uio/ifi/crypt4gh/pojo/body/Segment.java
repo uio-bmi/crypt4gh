@@ -9,6 +9,7 @@ import no.uio.ifi.crypt4gh.pojo.header.DataEncryptionParameters;
 
 import java.security.GeneralSecurityException;
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Data segment: 65536 bytes long unencrypted and 65564 bytes long encrypted (according to the current spec).
@@ -33,22 +34,22 @@ public abstract class Segment implements Crypt4GHEntity {
 
     public static Segment create(byte[] encryptedData, Collection<DataEncryptionParameters> dataEncryptionParametersList) throws GeneralSecurityException {
         for (DataEncryptionParameters dataEncryptionParameters : dataEncryptionParametersList) {
-            Segment segment = tryCreate(encryptedData, dataEncryptionParameters);
-            if (segment != null) {
-                return segment;
+            Optional<Segment> segmentOptional = tryCreate(encryptedData, dataEncryptionParameters);
+            if (segmentOptional.isPresent()) {
+                return segmentOptional.get();
             }
         }
         throw new GeneralSecurityException("Data Segment can't be decrypted with any of Header keys");
     }
 
-    private static Segment tryCreate(byte[] encryptedData, DataEncryptionParameters dataEncryptionParameters) throws GeneralSecurityException {
+    private static Optional<Segment> tryCreate(byte[] encryptedData, DataEncryptionParameters dataEncryptionParameters) throws GeneralSecurityException {
         DataEncryptionMethod dataEncryptionMethod = dataEncryptionParameters.getDataEncryptionMethod();
         switch (dataEncryptionMethod) {
             case CHACHA20_IETF_POLY1305:
                 try {
-                    return new ChaCha20IETFPoly1305Segment(encryptedData, (ChaCha20IETFPoly1305EncryptionParameters) dataEncryptionParameters, false);
+                    return Optional.of(new ChaCha20IETFPoly1305Segment(encryptedData, (ChaCha20IETFPoly1305EncryptionParameters) dataEncryptionParameters, false));
                 } catch (GeneralSecurityException e) {
-                    return null;
+                    return Optional.empty();
                 }
             default:
                 throw new GeneralSecurityException("Data Encryption Method not found for code: " + dataEncryptionMethod.getCode());

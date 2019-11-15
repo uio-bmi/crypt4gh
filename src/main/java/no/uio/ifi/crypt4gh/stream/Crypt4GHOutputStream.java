@@ -11,10 +11,7 @@ import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static no.uio.ifi.crypt4gh.pojo.body.Segment.UNENCRYPTED_DATA_SEGMENT_SIZE;
 
@@ -44,12 +41,33 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
         DataEncryptionParameters dataEncryptionParameters = new ChaCha20IETFPoly1305EncryptionParameters(dataKey);
         HeaderPacket headerPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(dataEncryptionParameters, writerPrivateKey, readerPublicKey);
         List<HeaderPacket> headerPackets = Collections.singletonList(headerPacket);
-        this.header = new Header(headerPackets.size(), headerPackets);
+        this.header = new Header(headerPackets);
         out.write(header.serialize());
         Collection<DataEncryptionParameters> dataEncryptionParametersList = header.getDataEncryptionParametersList();
-        if (dataEncryptionParametersList.isEmpty()) {
-            throw new GeneralSecurityException("Data Encryption Parameters not found in the Header");
-        }
+        this.dataEncryptionParameters = dataEncryptionParametersList.iterator().next();
+    }
+
+    /**
+     * Constructs the Crypt4GHOutputStream by wrapping existing OutputStream with DataEditList included to a header.
+     *
+     * @param out              Existing OutputStream.
+     * @param dataEditList     Data Edit List.
+     * @param writerPrivateKey Sender's private key.
+     * @param readerPublicKey  Recipient's public key.
+     * @throws IOException              In case the Crypt4GH header can't be read from the underlying OutputStream.
+     * @throws GeneralSecurityException In case the Crypt4GH header is malformed.
+     */
+    public Crypt4GHOutputStream(OutputStream out, DataEditList dataEditList, PrivateKey writerPrivateKey, PublicKey readerPublicKey) throws IOException, GeneralSecurityException {
+        super(out);
+        KeyUtils keyUtils = KeyUtils.getInstance();
+        SecretKey dataKey = keyUtils.generateSessionKey();
+        DataEncryptionParameters dataEncryptionParameters = new ChaCha20IETFPoly1305EncryptionParameters(dataKey);
+        HeaderPacket dataEncryptionParametersHeaderPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(dataEncryptionParameters, writerPrivateKey, readerPublicKey);
+        HeaderPacket dataEditListHeaderPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(dataEditList, writerPrivateKey, readerPublicKey);
+        List<HeaderPacket> headerPackets = new ArrayList<>(Arrays.asList(dataEncryptionParametersHeaderPacket, dataEditListHeaderPacket));
+        this.header = new Header(headerPackets);
+        out.write(header.serialize());
+        Collection<DataEncryptionParameters> dataEncryptionParametersList = header.getDataEncryptionParametersList();
         this.dataEncryptionParameters = dataEncryptionParametersList.iterator().next();
     }
 

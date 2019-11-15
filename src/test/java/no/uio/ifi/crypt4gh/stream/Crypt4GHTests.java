@@ -1,6 +1,8 @@
 package no.uio.ifi.crypt4gh.stream;
 
 import no.uio.ifi.crypt4gh.pojo.header.DataEditList;
+import no.uio.ifi.crypt4gh.pojo.header.Header;
+import no.uio.ifi.crypt4gh.util.Crypt4GHUtils;
 import no.uio.ifi.crypt4gh.util.KeyUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -27,6 +29,7 @@ import static no.uio.ifi.crypt4gh.pojo.body.Segment.UNENCRYPTED_DATA_SEGMENT_SIZ
 public class Crypt4GHTests {
 
     private KeyUtils keyUtils = KeyUtils.getInstance();
+    private Crypt4GHUtils crypt4GHUtils = Crypt4GHUtils.getInstance();
 
     /**
      * Tests reencryption of a byte-array generated in memory with OpenSSL keys.
@@ -166,9 +169,9 @@ public class Crypt4GHTests {
                 IOUtils.copy(inputStream, crypt4GHOutputStream);
             }
         }
-        DataEditList dataEditList = new DataEditList(0, new long[]{950, 837, 510, 847});
+        DataEditList dataEditList = new DataEditList(new long[]{950, 837, 510, 847});
         try (FileInputStream encryptedInputStream = new FileInputStream(encryptedFile);
-             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(encryptedInputStream, readerPrivateKey, dataEditList);
+             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(encryptedInputStream, dataEditList, readerPrivateKey);
              FileInputStream unencryptedInputStream = new FileInputStream(unencryptedFile)) {
             List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
             Assert.assertNotNull(lines);
@@ -186,12 +189,50 @@ public class Crypt4GHTests {
     }
 
     /**
-     * Tests reencryption of a file on a file-system with DataEditList and skipping forward to some specified byte.
+     * Tests reencryption of a file on a file-system with DataEditList injected to OutputStream and skipping forward to some specified byte.
      *
      * @throws Exception In case something fails.
      */
     @Test
-    public void partialFileReencryptionWithDataEditListTest() throws Exception {
+    public void partialFileReencryptionWithDataEditListInOutputStreamTest() throws Exception {
+        PrivateKey writerPrivateKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), PrivateKey.class);
+        PrivateKey readerPrivateKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), PrivateKey.class);
+        PublicKey readerPublicKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()), PublicKey.class);
+
+        File unencryptedFile = new File(getClass().getClassLoader().getResource("sample.txt").getFile());
+        File encryptedFile = Files.createTempFile("test", "enc").toFile();
+        File decryptedFile = Files.createTempFile("test", "dec").toFile();
+        DataEditList dataEditList = new DataEditList(new long[]{950, 837, 510, 847});
+        try (FileInputStream inputStream = new FileInputStream(unencryptedFile);
+             FileOutputStream outputStream = new FileOutputStream(encryptedFile)) {
+            try (Crypt4GHOutputStream crypt4GHOutputStream = new Crypt4GHOutputStream(outputStream, dataEditList, writerPrivateKey, readerPublicKey)) {
+                IOUtils.copy(inputStream, crypt4GHOutputStream);
+            }
+        }
+
+        try (FileInputStream encryptedInputStream = new FileInputStream(encryptedFile);
+             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(encryptedInputStream, readerPrivateKey);
+             FileInputStream unencryptedInputStream = new FileInputStream(unencryptedFile)) {
+            crypt4GHInputStream.skip(840);
+            List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
+            Assert.assertNotNull(lines);
+            Assert.assertEquals(1, lines.size());
+            unencryptedInputStream.skip(950 + 837 + 510 + 3);
+            String line = new String(unencryptedInputStream.readNBytes(843)).trim();
+            Assert.assertEquals(line, lines.get(0));
+        } finally {
+            encryptedFile.delete();
+            decryptedFile.delete();
+        }
+    }
+
+    /**
+     * Tests reencryption of a file on a file-system with DataEditList applied to InputStream and skipping forward to some specified byte.
+     *
+     * @throws Exception In case something fails.
+     */
+    @Test
+    public void partialFileReencryptionWithDataEditListInInputStreamTest() throws Exception {
         PrivateKey writerPrivateKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), PrivateKey.class);
         PrivateKey readerPrivateKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), PrivateKey.class);
         PublicKey readerPublicKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()), PublicKey.class);
@@ -205,9 +246,9 @@ public class Crypt4GHTests {
                 IOUtils.copy(inputStream, crypt4GHOutputStream);
             }
         }
-        DataEditList dataEditList = new DataEditList(0, new long[]{950, 837, 510, 847});
+        DataEditList dataEditList = new DataEditList(new long[]{950, 837, 510, 847});
         try (FileInputStream encryptedInputStream = new FileInputStream(encryptedFile);
-             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(encryptedInputStream, readerPrivateKey, dataEditList);
+             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(encryptedInputStream, dataEditList, readerPrivateKey);
              FileInputStream unencryptedInputStream = new FileInputStream(unencryptedFile)) {
             crypt4GHInputStream.skip(840);
             List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
@@ -218,6 +259,60 @@ public class Crypt4GHTests {
             Assert.assertEquals(line, lines.get(0));
         } finally {
             encryptedFile.delete();
+            decryptedFile.delete();
+        }
+    }
+
+    /**
+     * Tests adding recipient to a header.
+     *
+     * @throws Exception In case something fails.
+     */
+    @Test
+    public void addRecipientToHeaderTest() throws Exception {
+        PrivateKey writerPrivateKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), PrivateKey.class);
+        PrivateKey readerPrivateKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), PrivateKey.class);
+        PublicKey readerPublicKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()), PublicKey.class);
+        KeyPair anotherReaderKeyPair = keyUtils.generateKeyPair();
+
+        File unencryptedFile = new File(getClass().getClassLoader().getResource("sample.txt").getFile());
+        File encryptedFile = Files.createTempFile("test", "enc").toFile();
+        File encryptedFileWithAddedRecipient = Files.createTempFile("test2", "enc").toFile();
+        File decryptedFile = Files.createTempFile("test", "dec").toFile();
+        DataEditList dataEditList = new DataEditList(new long[]{950, 837, 510, 847});
+        Header header;
+        try (FileInputStream inputStream = new FileInputStream(unencryptedFile);
+             FileOutputStream outputStream = new FileOutputStream(encryptedFile)) {
+            try (Crypt4GHOutputStream crypt4GHOutputStream = new Crypt4GHOutputStream(outputStream, dataEditList, writerPrivateKey, readerPublicKey)) {
+                IOUtils.copy(inputStream, crypt4GHOutputStream);
+                header = crypt4GHOutputStream.getHeader();
+            }
+        }
+
+        int headerLength = header.serialize().length;
+        header = crypt4GHUtils.addRecipient(header.serialize(), readerPrivateKey, anotherReaderKeyPair.getPublic());
+        Assert.assertEquals(4, header.getHeaderPackets().size());
+
+        try (FileInputStream encryptedInputStream = new FileInputStream(encryptedFile);
+             FileOutputStream encryptedOutputStream = new FileOutputStream(encryptedFileWithAddedRecipient)) {
+            encryptedOutputStream.write(header.serialize());
+            encryptedInputStream.skip(headerLength);
+            IOUtils.copyLarge(encryptedInputStream, encryptedOutputStream);
+        }
+
+        try (FileInputStream encryptedInputStream = new FileInputStream(encryptedFileWithAddedRecipient);
+             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(encryptedInputStream, anotherReaderKeyPair.getPrivate());
+             FileInputStream unencryptedInputStream = new FileInputStream(unencryptedFile)) {
+            crypt4GHInputStream.skip(840);
+            List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
+            Assert.assertNotNull(lines);
+            Assert.assertEquals(1, lines.size());
+            unencryptedInputStream.skip(950 + 837 + 510 + 3);
+            String line = new String(unencryptedInputStream.readNBytes(843)).trim();
+            Assert.assertEquals(line, lines.get(0));
+        } finally {
+            encryptedFile.delete();
+            encryptedFileWithAddedRecipient.delete();
             decryptedFile.delete();
         }
     }

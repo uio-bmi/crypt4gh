@@ -1,7 +1,7 @@
 package no.uio.ifi.crypt4gh.pojo.header;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.ToString;
 import no.uio.ifi.crypt4gh.pojo.Crypt4GHEntity;
 
@@ -19,15 +19,14 @@ import java.util.*;
  */
 @ToString
 @AllArgsConstructor
-@Data
 public class Header implements Crypt4GHEntity {
 
     public static final int UNENCRYPTED_HEADER_LENGTH = 8 + 4 + 4;
     public static final String MAGIC_WORD = "crypt4gh";
     public static final int VERSION = 1;
 
-    private int headerPacketCount;
-    private List<HeaderPacket> headerPackets;
+    @Getter
+    private final List<HeaderPacket> headerPackets;
 
     public Header(InputStream inputStream, PrivateKey readerPrivateKey) throws IOException, GeneralSecurityException {
         byte[] unencryptedHeaderBytes = inputStream.readNBytes(UNENCRYPTED_HEADER_LENGTH);
@@ -39,16 +38,16 @@ public class Header implements Crypt4GHEntity {
         if (VERSION != version) {
             throw new GeneralSecurityException("Unsupported Crypt4GH version: " + version);
         }
-        headerPacketCount = Crypt4GHEntity.getInt(Arrays.copyOfRange(unencryptedHeaderBytes, 12, 16));
-        headerPackets = new ArrayList<>();
+        int headerPacketCount = Crypt4GHEntity.getInt(Arrays.copyOfRange(unencryptedHeaderBytes, 12, 16));
+        this.headerPackets = new ArrayList<>();
         for (int i = 0; i < headerPacketCount; i++) {
-            headerPackets.add(HeaderPacket.create(inputStream, readerPrivateKey));
+            Optional<HeaderPacket> headerPacketOptional = HeaderPacket.create(inputStream, readerPrivateKey);
+            headerPacketOptional.ifPresent(headerPackets::add);
         }
     }
 
-    public Collection<DataEncryptionParameters> getDataEncryptionParametersList() {
+    public Collection<DataEncryptionParameters> getDataEncryptionParametersList() throws GeneralSecurityException {
         Collection<DataEncryptionParameters> result = new ArrayList<>();
-        List<HeaderPacket> headerPackets = getHeaderPackets();
         for (HeaderPacket headerPacket : headerPackets) {
             EncryptableHeaderPacket encryptablePayload = headerPacket.getEncryptablePayload();
             HeaderPacketType packetType = encryptablePayload.getPacketType();
@@ -56,11 +55,13 @@ public class Header implements Crypt4GHEntity {
                 result.add((DataEncryptionParameters) encryptablePayload);
             }
         }
+        if (result.isEmpty()) {
+            throw new GeneralSecurityException("Data Encryption Parameters not found in the Header");
+        }
         return result;
     }
 
     public Optional<DataEditList> getDataEditList() {
-        List<HeaderPacket> headerPackets = getHeaderPackets();
         for (HeaderPacket headerPacket : headerPackets) {
             EncryptableHeaderPacket encryptablePayload = headerPacket.getEncryptablePayload();
             HeaderPacketType packetType = encryptablePayload.getPacketType();
@@ -76,7 +77,7 @@ public class Header implements Crypt4GHEntity {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         byteArrayOutputStream.write(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).put(MAGIC_WORD.getBytes()).array());
         byteArrayOutputStream.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(VERSION).array());
-        byteArrayOutputStream.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(headerPacketCount).array());
+        byteArrayOutputStream.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(headerPackets.size()).array());
         for (HeaderPacket headerPacket : headerPackets) {
             byteArrayOutputStream.write(headerPacket.serialize());
         }

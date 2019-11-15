@@ -37,9 +37,6 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
         super(in);
         this.header = new Header(in, readerPrivateKey);
         this.dataEncryptionParametersList = header.getDataEncryptionParametersList();
-        if (dataEncryptionParametersList.isEmpty()) {
-            throw new GeneralSecurityException("Data Encryption Parameters not found in the Header");
-        }
         DataEncryptionParameters firstDataEncryptionParameters = dataEncryptionParametersList.iterator().next();
         for (DataEncryptionParameters encryptionParameters : dataEncryptionParametersList) {
             if (firstDataEncryptionParameters.getDataEncryptionMethod() != encryptionParameters.getDataEncryptionMethod()) {

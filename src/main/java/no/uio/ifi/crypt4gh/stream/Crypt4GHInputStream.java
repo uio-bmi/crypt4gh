@@ -49,12 +49,12 @@ public class Crypt4GHInputStream extends FilterInputStream {
      * Constructs Crypt4GHInputStream that wraps existing InputStream with DataEditList.
      *
      * @param in               Existing InputStream.
-     * @param readerPrivateKey Recipient's private key.
      * @param dataEditList     DataEditList
+     * @param readerPrivateKey Recipient's private key.
      * @throws IOException              In case the Crypt4GH header can't be read from the underlying InputStream.
      * @throws GeneralSecurityException In case the Crypt4GH header can't be deserialized.
      */
-    public Crypt4GHInputStream(InputStream in, PrivateKey readerPrivateKey, DataEditList dataEditList) throws IOException, GeneralSecurityException {
+    public Crypt4GHInputStream(InputStream in, DataEditList dataEditList, PrivateKey readerPrivateKey) throws IOException, GeneralSecurityException {
         super(new Crypt4GHInputStreamInternal(in, readerPrivateKey));
         this.useDataEditList = true;
         long[] lengthsArray = dataEditList.getLengths();
