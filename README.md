@@ -15,9 +15,9 @@ To include this library to your Maven project add following to the `pom.xml`:
 
     <dependencies>
         <dependency>
-            <groupId>com.github.uio-bmi</groupId>
+            <groupId>no.uio.ifi</groupId>
             <artifactId>crypt4gh</artifactId>
-            <version>v2.0.0</version>
+            <version>2.1.0</version>
         </dependency>
     </dependencies>
 
@@ -25,8 +25,8 @@ To include this library to your Maven project add following to the `pom.xml`:
 
     <repositories>
         <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
+            <id>GitHub</id>
+            <url>https://maven.pkg.github.com/uio-bmi/crypt4gh</url>
         </repository>
     </repositories>
 
