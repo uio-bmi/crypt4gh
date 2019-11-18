@@ -1,5 +1,6 @@
 package no.uio.ifi.crypt4gh.stream;
 
+import lombok.extern.slf4j.Slf4j;
 import no.uio.ifi.crypt4gh.pojo.body.Segment;
 import no.uio.ifi.crypt4gh.pojo.header.DataEditList;
 import no.uio.ifi.crypt4gh.pojo.header.DataEncryptionParameters;
@@ -20,6 +21,7 @@ import static no.uio.ifi.crypt4gh.pojo.body.Segment.UNENCRYPTED_DATA_SEGMENT_SIZ
 /**
  * Internal part of Crypt4GHInputStream that wraps existing InputStream, not a public API.
  */
+@Slf4j
 class Crypt4GHInputStreamInternal extends FilterInputStream {
 
     private Header header;
@@ -69,6 +71,40 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
             fillBuffer();
         }
         return buffer[bytesRead++];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        /*
+            Reusing default `InputStream`'s implementation, because `FilterStream`'s implementation doesn't fit
+         */
+        Objects.checkFromIndexSize(off, len, b.length);
+        if (len == 0) {
+            return 0;
+        }
+
+        int c = read();
+        if (c == -1) {
+            return -1;
+        }
+        b[off] = (byte) c;
+
+        int i = 1;
+        try {
+            for (; i < len; i++) {
+                c = read();
+                if (c == -1) {
+                    break;
+                }
+                b[off + i] = (byte) c;
+            }
+        } catch (IOException ee) {
+            log.error(ee.getMessage(), ee);
+        }
+        return i;
     }
 
     /**
@@ -128,39 +164,6 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
             buffer[i] = unencryptedData[i] & 0xff;
         }
         lastDecryptedSegment++;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int read(byte[] b, int off, int len) throws IOException {
-        /*
-            Reusing default `InputStream`'s implementation, because `FilterStream`'s implementation doesn't fit
-         */
-        Objects.checkFromIndexSize(off, len, b.length);
-        if (len == 0) {
-            return 0;
-        }
-
-        int c = read();
-        if (c == -1) {
-            return -1;
-        }
-        b[off] = (byte) c;
-
-        int i = 1;
-        try {
-            for (; i < len; i++) {
-                c = read();
-                if (c == -1) {
-                    break;
-                }
-                b[off + i] = (byte) c;
-            }
-        } catch (IOException ee) {
-        }
-        return i;
     }
 
 }

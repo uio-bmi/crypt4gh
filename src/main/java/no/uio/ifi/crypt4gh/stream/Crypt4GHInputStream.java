@@ -3,6 +3,7 @@ package no.uio.ifi.crypt4gh.stream;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import no.uio.ifi.crypt4gh.pojo.header.DataEditList;
 import no.uio.ifi.crypt4gh.pojo.header.Header;
 
@@ -19,6 +20,7 @@ import java.util.Queue;
 /**
  * Crypt4GHInputStream that wraps existing InputStream.
  */
+@Slf4j
 public class Crypt4GHInputStream extends FilterInputStream {
 
     private boolean useDataEditList;
@@ -80,6 +82,40 @@ public class Crypt4GHInputStream extends FilterInputStream {
     @Override
     public int read() throws IOException {
         return useDataEditList ? readWithDataEditList() : in.read();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        /*
+            Reusing default `InputStream`'s implementation, because `FilterStream`'s implementation doesn't fit
+         */
+        Objects.checkFromIndexSize(off, len, b.length);
+        if (len == 0) {
+            return 0;
+        }
+
+        int c = read();
+        if (c == -1) {
+            return -1;
+        }
+        b[off] = (byte) c;
+
+        int i = 1;
+        try {
+            for (; i < len; i++) {
+                c = read();
+                if (c == -1) {
+                    break;
+                }
+                b[off + i] = (byte) c;
+            }
+        } catch (IOException ee) {
+            log.error(ee.getMessage(), ee);
+        }
+        return i;
     }
 
     private synchronized int readWithDataEditList() throws IOException {
@@ -159,39 +195,6 @@ public class Crypt4GHInputStream extends FilterInputStream {
             }
         }
         return bytesSkipped;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int read(byte[] b, int off, int len) throws IOException {
-        /*
-            Reusing default `InputStream`'s implementation, because `FilterStream`'s implementation doesn't fit
-         */
-        Objects.checkFromIndexSize(off, len, b.length);
-        if (len == 0) {
-            return 0;
-        }
-
-        int c = read();
-        if (c == -1) {
-            return -1;
-        }
-        b[off] = (byte) c;
-
-        int i = 1;
-        try {
-            for (; i < len; i++) {
-                c = read();
-                if (c == -1) {
-                    break;
-                }
-                b[off + i] = (byte) c;
-            }
-        } catch (IOException ee) {
-        }
-        return i;
     }
 
     @ToString
