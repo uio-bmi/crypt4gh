@@ -3,6 +3,7 @@ package no.uio.ifi.crypt4gh.stream;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import no.uio.ifi.crypt4gh.pojo.header.DataEditList;
 import no.uio.ifi.crypt4gh.pojo.header.Header;
 
@@ -19,6 +20,7 @@ import java.util.Queue;
 /**
  * Crypt4GHInputStream that wraps existing InputStream.
  */
+@Slf4j
 public class Crypt4GHInputStream extends FilterInputStream {
 
     private boolean useDataEditList;
@@ -111,6 +113,7 @@ public class Crypt4GHInputStream extends FilterInputStream {
                 b[off + i] = (byte) c;
             }
         } catch (IOException ee) {
+            log.error(ee.getMessage(), ee);
         }
         return i;
     }

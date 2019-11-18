@@ -1,5 +1,6 @@
 package no.uio.ifi.crypt4gh.stream;
 
+import lombok.extern.slf4j.Slf4j;
 import no.uio.ifi.crypt4gh.pojo.body.Segment;
 import no.uio.ifi.crypt4gh.pojo.header.DataEditList;
 import no.uio.ifi.crypt4gh.pojo.header.DataEncryptionParameters;
@@ -20,6 +21,7 @@ import static no.uio.ifi.crypt4gh.pojo.body.Segment.UNENCRYPTED_DATA_SEGMENT_SIZ
 /**
  * Internal part of Crypt4GHInputStream that wraps existing InputStream, not a public API.
  */
+@Slf4j
 class Crypt4GHInputStreamInternal extends FilterInputStream {
 
     private Header header;
@@ -100,6 +102,7 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
                 b[off + i] = (byte) c;
             }
         } catch (IOException ee) {
+            log.error(ee.getMessage(), ee);
         }
         return i;
     }
