@@ -82,6 +82,39 @@ public class Crypt4GHInputStream extends FilterInputStream {
         return useDataEditList ? readWithDataEditList() : in.read();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        /*
+            Reusing default `InputStream`'s implementation, because `FilterStream`'s implementation doesn't fit
+         */
+        Objects.checkFromIndexSize(off, len, b.length);
+        if (len == 0) {
+            return 0;
+        }
+
+        int c = read();
+        if (c == -1) {
+            return -1;
+        }
+        b[off] = (byte) c;
+
+        int i = 1;
+        try {
+            for (; i < len; i++) {
+                c = read();
+                if (c == -1) {
+                    break;
+                }
+                b[off + i] = (byte) c;
+            }
+        } catch (IOException ee) {
+        }
+        return i;
+    }
+
     private synchronized int readWithDataEditList() throws IOException {
         if (!lengths.isEmpty()) {
             DataEditListEntry dataEditListEntry = lengths.peek();
@@ -159,39 +192,6 @@ public class Crypt4GHInputStream extends FilterInputStream {
             }
         }
         return bytesSkipped;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int read(byte[] b, int off, int len) throws IOException {
-        /*
-            Reusing default `InputStream`'s implementation, because `FilterStream`'s implementation doesn't fit
-         */
-        Objects.checkFromIndexSize(off, len, b.length);
-        if (len == 0) {
-            return 0;
-        }
-
-        int c = read();
-        if (c == -1) {
-            return -1;
-        }
-        b[off] = (byte) c;
-
-        int i = 1;
-        try {
-            for (; i < len; i++) {
-                c = read();
-                if (c == -1) {
-                    break;
-                }
-                b[off + i] = (byte) c;
-            }
-        } catch (IOException ee) {
-        }
-        return i;
     }
 
     @ToString

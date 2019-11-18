@@ -75,6 +75,39 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
      * {@inheritDoc}
      */
     @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        /*
+            Reusing default `InputStream`'s implementation, because `FilterStream`'s implementation doesn't fit
+         */
+        Objects.checkFromIndexSize(off, len, b.length);
+        if (len == 0) {
+            return 0;
+        }
+
+        int c = read();
+        if (c == -1) {
+            return -1;
+        }
+        b[off] = (byte) c;
+
+        int i = 1;
+        try {
+            for (; i < len; i++) {
+                c = read();
+                if (c == -1) {
+                    break;
+                }
+                b[off + i] = (byte) c;
+            }
+        } catch (IOException ee) {
+        }
+        return i;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public long skip(long n) throws IOException {
         if (n <= 0) {
             return 0;
@@ -128,39 +161,6 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
             buffer[i] = unencryptedData[i] & 0xff;
         }
         lastDecryptedSegment++;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int read(byte[] b, int off, int len) throws IOException {
-        /*
-            Reusing default `InputStream`'s implementation, because `FilterStream`'s implementation doesn't fit
-         */
-        Objects.checkFromIndexSize(off, len, b.length);
-        if (len == 0) {
-            return 0;
-        }
-
-        int c = read();
-        if (c == -1) {
-            return -1;
-        }
-        b[off] = (byte) c;
-
-        int i = 1;
-        try {
-            for (; i < len; i++) {
-                c = read();
-                if (c == -1) {
-                    break;
-                }
-                b[off + i] = (byte) c;
-            }
-        } catch (IOException ee) {
-        }
-        return i;
     }
 
 }
