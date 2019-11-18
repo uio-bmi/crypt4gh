@@ -1,5 +1,6 @@
 # crypt4gh
 [![Build Status](https://travis-ci.org/uio-bmi/crypt4gh.svg?branch=master)](https://travis-ci.org/uio-bmi/crypt4gh)
+[![CodeFactor](https://www.codefactor.io/repository/github/uio-bmi/crypt4gh/badge/master)](https://www.codefactor.io/repository/github/uio-bmi/crypt4gh/overview/master)
 ## Overview
 ![](https://habrastorage.org/webt/yn/y2/pk/yny2pkp68sccx1vbvmodz-hfpzm.png)
 
