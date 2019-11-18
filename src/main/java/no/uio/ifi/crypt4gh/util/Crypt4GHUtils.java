@@ -21,9 +21,6 @@ import java.util.List;
  */
 public class Crypt4GHUtils {
 
-    public static final String CHA_CHA_20 = "ChaCha20";
-    public static final String X25519 = "X25519";
-
     private static Crypt4GHUtils ourInstance = new Crypt4GHUtils();
 
     public static Crypt4GHUtils getInstance() {
@@ -32,6 +29,25 @@ public class Crypt4GHUtils {
 
     private Crypt4GHUtils() {
         Security.addProvider(new Blake2bProvider());
+    }
+
+    /**
+     * Sets recipient to a header.
+     *
+     * @param serializedHeader        Serialized header to set recipient to.
+     * @param privateKeyForDecryption Private key top decrypt the header.
+     * @param newRecipientPublicKey   Public key of a new recipient.
+     * @return Header with recipient set.
+     * @throws IOException              In case of I/O error.
+     * @throws GeneralSecurityException In case of encryption related error.
+     */
+    public Header setRecipient(byte[] serializedHeader, PrivateKey privateKeyForDecryption, PublicKey newRecipientPublicKey) throws IOException, GeneralSecurityException {
+        try (ByteArrayInputStream headerInputStream = new ByteArrayInputStream(serializedHeader);
+             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(headerInputStream, privateKeyForDecryption)) {
+            Header header = crypt4GHInputStream.getHeader();
+            List<HeaderPacket> headerPacketsWithNewRecipient = getHeaderPacketsWithNewRecipient(header, privateKeyForDecryption, newRecipientPublicKey);
+            return new Header(headerPacketsWithNewRecipient);
+        }
     }
 
     /**
@@ -48,24 +64,26 @@ public class Crypt4GHUtils {
         try (ByteArrayInputStream headerInputStream = new ByteArrayInputStream(serializedHeader);
              Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(headerInputStream, privateKeyForDecryption)) {
             Header header = crypt4GHInputStream.getHeader();
-            addRecipient(header, privateKeyForDecryption, newRecipientPublicKey);
+            List<HeaderPacket> headerPacketsWithNewRecipient = getHeaderPacketsWithNewRecipient(header, privateKeyForDecryption, newRecipientPublicKey);
+            header.getHeaderPackets().addAll(headerPacketsWithNewRecipient);
             return header;
         }
     }
 
-    private void addRecipient(Header header, PrivateKey privateKeyForDecryption, PublicKey newRecipientPublicKey) throws IOException, GeneralSecurityException {
-        List<HeaderPacket> headerPackets = new ArrayList<>(header.getHeaderPackets());
-        for (HeaderPacket headerPacket : headerPackets) {
+    private List<HeaderPacket> getHeaderPacketsWithNewRecipient(Header header, PrivateKey privateKeyForDecryption, PublicKey newRecipientPublicKey) throws IOException, GeneralSecurityException {
+        List<HeaderPacket> result = new ArrayList<>();
+        for (HeaderPacket headerPacket : header.getHeaderPackets()) {
             HeaderEncryptionMethod packetEncryption = headerPacket.getPacketEncryption();
             switch (packetEncryption) {
                 case X25519_CHACHA20_IETF_POLY1305:
                     HeaderPacket newHeaderPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(headerPacket.getEncryptablePayload(), privateKeyForDecryption, newRecipientPublicKey);
-                    header.getHeaderPackets().add(newHeaderPacket);
+                    result.add(newHeaderPacket);
                     break;
                 default:
                     throw new GeneralSecurityException("Header Encryption Method not supported: " + packetEncryption.getCode());
             }
         }
+        return result;
     }
 
 }

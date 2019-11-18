@@ -17,7 +17,7 @@ To include this library to your Maven project add following to the `pom.xml`:
         <dependency>
             <groupId>no.uio.ifi</groupId>
             <artifactId>crypt4gh</artifactId>
-            <version>2.2.0</version>
+            <version>2.3.0</version>
         </dependency>
     </dependencies>
 
@@ -38,7 +38,7 @@ To include this library to your Maven project add following to the `pom.xml`:
 To install console app you can use the following script (assuming you are using `bash`):
 ```
 PREFIX=/usr/local/bin && \
-sudo curl -L "https://github.com/uio-bmi/crypt4gh/releases/download/v2.2.0/crypt4gh-2.2.0-shaded.jar" -o "$PREFIX/crypt4gh.jar" && \
+sudo curl -L "https://github.com/uio-bmi/crypt4gh/releases/download/v2.3.0/crypt4gh-2.3.0-shaded.jar" -o "$PREFIX/crypt4gh.jar" && \
 echo -e '#!/usr/bin/env bash\njava -jar' "$PREFIX/crypt4gh.jar" '$@' | sudo tee "$PREFIX/crypt4gh" > /dev/null && \
 sudo chmod +x "$PREFIX/crypt4gh"
 ```

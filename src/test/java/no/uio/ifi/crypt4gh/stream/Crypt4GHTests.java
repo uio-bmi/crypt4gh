@@ -264,6 +264,60 @@ public class Crypt4GHTests {
     }
 
     /**
+     * Tests setting recipient to a header.
+     *
+     * @throws Exception In case something fails.
+     */
+    @Test
+    public void setRecipientToHeaderTest() throws Exception {
+        PrivateKey writerPrivateKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), PrivateKey.class);
+        PrivateKey readerPrivateKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), PrivateKey.class);
+        PublicKey readerPublicKey = keyUtils.readPEMFile(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()), PublicKey.class);
+        KeyPair anotherReaderKeyPair = keyUtils.generateKeyPair();
+
+        File unencryptedFile = new File(getClass().getClassLoader().getResource("sample.txt").getFile());
+        File encryptedFile = Files.createTempFile("test", "enc").toFile();
+        File encryptedFileWithAddedRecipient = Files.createTempFile("test2", "enc").toFile();
+        File decryptedFile = Files.createTempFile("test", "dec").toFile();
+        DataEditList dataEditList = new DataEditList(new long[]{950, 837, 510, 847});
+        Header header;
+        try (FileInputStream inputStream = new FileInputStream(unencryptedFile);
+             FileOutputStream outputStream = new FileOutputStream(encryptedFile)) {
+            try (Crypt4GHOutputStream crypt4GHOutputStream = new Crypt4GHOutputStream(outputStream, dataEditList, writerPrivateKey, readerPublicKey)) {
+                IOUtils.copy(inputStream, crypt4GHOutputStream);
+                header = crypt4GHOutputStream.getHeader();
+            }
+        }
+
+        int headerLength = header.serialize().length;
+        header = crypt4GHUtils.setRecipient(header.serialize(), readerPrivateKey, anotherReaderKeyPair.getPublic());
+        Assert.assertEquals(2, header.getHeaderPackets().size());
+
+        try (FileInputStream encryptedInputStream = new FileInputStream(encryptedFile);
+             FileOutputStream encryptedOutputStream = new FileOutputStream(encryptedFileWithAddedRecipient)) {
+            encryptedOutputStream.write(header.serialize());
+            encryptedInputStream.skip(headerLength);
+            IOUtils.copyLarge(encryptedInputStream, encryptedOutputStream);
+        }
+
+        try (FileInputStream encryptedInputStream = new FileInputStream(encryptedFileWithAddedRecipient);
+             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(encryptedInputStream, anotherReaderKeyPair.getPrivate());
+             FileInputStream unencryptedInputStream = new FileInputStream(unencryptedFile)) {
+            crypt4GHInputStream.skip(840);
+            List<String> lines = IOUtils.readLines(crypt4GHInputStream, Charset.defaultCharset());
+            Assert.assertNotNull(lines);
+            Assert.assertEquals(1, lines.size());
+            unencryptedInputStream.skip(950 + 837 + 510 + 3);
+            String line = new String(unencryptedInputStream.readNBytes(843)).trim();
+            Assert.assertEquals(line, lines.get(0));
+        } finally {
+            encryptedFile.delete();
+            encryptedFileWithAddedRecipient.delete();
+            decryptedFile.delete();
+        }
+    }
+
+    /**
      * Tests adding recipient to a header.
      *
      * @throws Exception In case something fails.
