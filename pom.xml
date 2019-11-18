@@ -13,6 +13,16 @@
     <description>Crypt4GH Java implementation</description>
     <url>https://github.com/uio-bmi/crypt4gh/</url>
 
+    <organization>
+        <name>Biomedical Informatics Department at UiO</name>
+        <url>https://www.mn.uio.no/ifi/english/research/groups/bmi/</url>
+    </organization>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/uio-bmi/crypt4gh</url>
+    </issueManagement>
+
     <licenses>
         <license>
             <name>MIT License</name>
@@ -23,7 +33,16 @@
 
     <scm>
         <url>https://github.com/uio-bmi/crypt4gh/</url>
+        <connection>
+            scm:git:git://github.com/uio-bmi/crypt4gh.git
+        </connection>
     </scm>
+
+    <developers>
+        <developer>
+            <name>Dmytro Titov</name>
+        </developer>
+    </developers>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -81,6 +100,11 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
