@@ -42,7 +42,7 @@ jobs:
           prerelease: false
 
       - name: Prepare release asset
-        run: cp target/crypt4gh-*-shaded.jar target/crypt4gh-${{ github.ref }}.jar
+        run: cp target/crypt4gh-*-shaded.jar target/crypt4gh.jar
 
       - name: Upload release asset
         uses: actions/upload-release-asset@v1.0.1
@@ -50,7 +50,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/crypt4gh-${{ github.ref }}.jar
+          asset_path: target/crypt4gh.jar
           asset_name: crypt4gh.jar
           asset_content_type: application/java-archive
 
