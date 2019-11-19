@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
 
 jobs:
 
@@ -20,7 +20,16 @@ jobs:
         with:
           java-version: 13
 
-      - name: Create Release
+      - name: Deploy artifact with Maven
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ~/.m2
+          echo "<settings><servers><server><id>github</id><username>OWNER</username><password>${GITHUB_TOKEN}</password></server></servers></settings>" > ~/.m2/settings.xml
+          mvn javadoc:javadoc
+          mvn deploy || true
+
+      - name: Create release
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -32,7 +41,10 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Release Asset
+      - name: Prepare release asset
+        run: cp target/crypt4gh-*-shaded.jar target/crypt4gh-${{ github.ref }}.jar
+
+      - name: Upload release asset
         uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -41,15 +53,6 @@ jobs:
           asset_path: target/crypt4gh-${{ github.ref }}.jar
           asset_name: crypt4gh.jar
           asset_content_type: application/java-archive
-
-      - name: Deploy artifact with Maven
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p ~/.m2
-          echo "<settings><servers><server><id>github</id><username>OWNER</username><password>${GITHUB_TOKEN}</password></server></servers></settings>" > ~/.m2/settings.xml
-          mvn javadoc:javadoc
-          mvn deploy || true
 
       - name: Publish Javadocs
         uses: JamesIves/github-pages-deploy-action@releases/v3
