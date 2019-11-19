@@ -40,6 +40,7 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: target/crypt4gh-${{ github.ref }}.jar
           asset_name: crypt4gh.jar
+          asset_content_type: application/java-archive
 
       - name: Deploy artifact with Maven
         env:
