@@ -32,6 +32,15 @@ jobs:
           draft: false
           prerelease: false
 
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: target/crypt4gh-${{ github.ref }}.jar
+          asset_name: crypt4gh.jar
+
       - name: Deploy artifact with Maven
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -46,4 +55,4 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
-          FOLDER: site/apidocs
+          FOLDER: target/site/apidocs
