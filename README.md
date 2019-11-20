@@ -27,9 +27,9 @@ To include this library to your Maven project add following to the `pom.xml`:
 
     <repositories>
         <repository>
-            <id>bintray-uio-bmi-Crypt4GH</id>
+            <id>central</id>
             <name>bintray</name>
-            <url>https://dl.bintray.com/uio-bmi/Crypt4GH</url>
+            <url>http://jcenter.bintray.com</url>
         </repository>
     </repositories>
 
