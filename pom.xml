@@ -164,14 +164,40 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
     <distributionManagement>
         <repository>
-            <id>github</id>
-            <name>GitHub uio-bmi Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/uio-bmi/crypt4gh</url>
+            <id>bintray-uio-bmi-Crypt4GH</id>
+            <name>uio-bmi-Crypt4GH</name>
+            <url>https://api.bintray.com/maven/uio-bmi/Crypt4GH/Crypt4GH/;publish=1</url>
         </repository>
     </distributionManagement>
 

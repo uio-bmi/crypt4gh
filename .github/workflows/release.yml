@@ -25,7 +25,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p ~/.m2
-          echo "<settings><servers><server><id>github</id><username>OWNER</username><password>${GITHUB_TOKEN}</password></server></servers></settings>" > ~/.m2/settings.xml
+          echo "<settings><servers><server><id>bintray-uio-bmi-Crypt4GH</id><username>dtitov</username><password>${MAVEN_TOKEN}</password></server></servers></settings>" > ~/.m2/settings.xml
           mvn javadoc:javadoc
           mvn deploy || true
 

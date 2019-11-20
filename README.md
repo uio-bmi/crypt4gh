@@ -1,6 +1,7 @@
 # crypt4gh
-[![Build Status](https://travis-ci.org/uio-bmi/crypt4gh.svg?branch=master)](https://travis-ci.org/uio-bmi/crypt4gh)
+[![Build Status](https://github.com/uio-bmi/crypt4gh/workflows/Java%20CI/badge.svg)](https://github.com/uio-bmi/crypt4gh/actions)
 [![CodeFactor](https://www.codefactor.io/repository/github/uio-bmi/crypt4gh/badge/master)](https://www.codefactor.io/repository/github/uio-bmi/crypt4gh/overview/master)
+[![Download](https://api.bintray.com/packages/uio-bmi/Crypt4GH/Crypt4GH/images/download.svg)](https://bintray.com/uio-bmi/Crypt4GH/Crypt4GH/_latestVersion)
 ## Overview
 ![](https://habrastorage.org/webt/yn/y2/pk/yny2pkp68sccx1vbvmodz-hfpzm.png)
 
@@ -18,7 +19,7 @@ To include this library to your Maven project add following to the `pom.xml`:
         <dependency>
             <groupId>no.uio.ifi</groupId>
             <artifactId>crypt4gh</artifactId>
-            <version>2.0.0</version>
+            <version>2.0.1</version>
         </dependency>
     </dependencies>
 
@@ -26,8 +27,9 @@ To include this library to your Maven project add following to the `pom.xml`:
 
     <repositories>
         <repository>
-            <id>GitHub</id>
-            <url>https://maven.pkg.github.com/uio-bmi/crypt4gh</url>
+            <id>bintray-uio-bmi-Crypt4GH</id>
+            <name>bintray</name>
+            <url>https://dl.bintray.com/uio-bmi/Crypt4GH</url>
         </repository>
     </repositories>
 
@@ -39,7 +41,7 @@ To include this library to your Maven project add following to the `pom.xml`:
 To install console app you can use the following script (assuming you are using `bash`):
 ```
 PREFIX=/usr/local/bin && \
-sudo curl -L "https://github.com/uio-bmi/crypt4gh/releases/download/v2.0.0/crypt4gh.jar" -o "$PREFIX/crypt4gh.jar" && \
+sudo curl -L "https://github.com/uio-bmi/crypt4gh/releases/download/v2.0.1/crypt4gh.jar" -o "$PREFIX/crypt4gh.jar" && \
 echo -e '#!/usr/bin/env bash\njava -jar' "$PREFIX/crypt4gh.jar" '$@' | sudo tee "$PREFIX/crypt4gh" > /dev/null && \
 sudo chmod +x "$PREFIX/crypt4gh"
 ```
