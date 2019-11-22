@@ -19,7 +19,7 @@ To include this library to your Maven project add following to the `pom.xml`:
         <dependency>
             <groupId>no.uio.ifi</groupId>
             <artifactId>crypt4gh</artifactId>
-            <version>2.0.0</version>
+            <version>VERSION</version>
         </dependency>
     </dependencies>
 
