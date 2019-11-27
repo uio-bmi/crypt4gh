@@ -84,11 +84,8 @@ public class KeyUtils {
         KeyFactory keyFactory = KeyFactory.getInstance(X25519);
         XECPublicKeySpec publicKeySpec = keyFactory.getKeySpec(publicKey, XECPublicKeySpec.class);
         byte[] u = publicKeySpec.getU().toByteArray();
-        if (u.length != 32) { // handle the case when U array starts with zero-byte (it gets "eaten" by BigInteger)
-            u = ArrayUtils.addAll(new byte[32 - u.length], u);
-        }
-        ArrayUtils.reverse(u);
-        return u;
+        ArrayUtils.reverse(u); // conversion from BigInteger to byte[] reverses array, thus reversing it back
+        return Arrays.copyOf(u, 32); // if array ends with zeroes, they will be omitted during conversion, thus appending them back
     }
 
     /**
@@ -138,7 +135,7 @@ public class KeyUtils {
     public PublicKey constructPublicKey(byte[] u) throws GeneralSecurityException {
         KeyFactory keyFactory = KeyFactory.getInstance(X25519);
         u = u.clone();
-        ArrayUtils.reverse(u);
+        ArrayUtils.reverse(u); // conversion from byte[] to BigInteger will reverse array, thus reversing it here in the first place
         return keyFactory.generatePublic(new XECPublicKeySpec(new NamedParameterSpec(X25519), new BigInteger(u)));
     }
 
@@ -238,14 +235,8 @@ public class KeyUtils {
     @SuppressWarnings("unchecked")
     public <T> T readKey(String keyMaterial, Class<T> keyType) throws GeneralSecurityException {
         KeyFactory keyFactory = KeyFactory.getInstance(X25519);
+        byte[] decodedKey = decodeKey(keyMaterial);
         if (keyType.isAssignableFrom(PublicKey.class)) {
-            String keyLine = keyMaterial
-                    .replace(BEGIN_PUBLIC_KEY, "")
-                    .replace(END_PUBLIC_KEY, "")
-                    .replace(System.lineSeparator(), "")
-                    .replace(" ", "")
-                    .trim();
-            byte[] decodedKey = Base64.getDecoder().decode(keyLine);
             try {
                 return (T) keyFactory.generatePublic(new X509EncodedKeySpec(decodedKey));
             } catch (InvalidKeySpecException e) { // not an OpenSSL format
@@ -253,13 +244,6 @@ public class KeyUtils {
             }
         }
         if (keyType.isAssignableFrom(PrivateKey.class)) {
-            String keyLine = keyMaterial
-                    .replace(BEGIN_PRIVATE_KEY, "")
-                    .replace(END_PRIVATE_KEY, "")
-                    .replace(System.lineSeparator(), "")
-                    .replace(" ", "")
-                    .trim();
-            byte[] decodedKey = Base64.getDecoder().decode(keyLine);
             try {
                 return (T) keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decodedKey));
             } catch (InvalidKeySpecException e) { // not an OpenSSL format
@@ -267,6 +251,17 @@ public class KeyUtils {
             }
         }
         throw new RuntimeException("keyType must be either PublicKey or PrivateKey");
+    }
+
+    /**
+     * Decodes Base64 key string, surrounded by header and footer.
+     *
+     * @param keyMaterial Base64 key string, surrounded by header and footer.
+     * @return Decoded key as byte array.
+     */
+    public byte[] decodeKey(String keyMaterial) {
+        keyMaterial = keyMaterial.replaceAll("-----(.*)-----", "").replace(System.lineSeparator(), "").replace(" ", "").trim();
+        return Base64.getDecoder().decode(keyMaterial);
     }
 
     /**
