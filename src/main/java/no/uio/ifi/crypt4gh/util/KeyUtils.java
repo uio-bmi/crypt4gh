@@ -2,16 +2,21 @@ package no.uio.ifi.crypt4gh.util;
 
 import com.rfksystems.blake2b.Blake2b;
 import com.rfksystems.blake2b.security.Blake2bProvider;
+import no.uio.ifi.crypt4gh.pojo.key.Cipher;
+import no.uio.ifi.crypt4gh.pojo.key.KDF;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
 import javax.crypto.KeyAgreement;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.security.*;
 import java.security.interfaces.XECPrivateKey;
@@ -21,6 +26,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+
+import static no.uio.ifi.crypt4gh.pojo.header.X25519ChaCha20IETFPoly1305HeaderPacket.CHA_CHA_20_POLY_1305;
+import static no.uio.ifi.crypt4gh.pojo.header.X25519ChaCha20IETFPoly1305HeaderPacket.NONCE_SIZE;
 
 /**
  * A bunch of methods for generating/constructing/reading/writing/deriving keys.
@@ -34,6 +42,8 @@ public class KeyUtils {
     public static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
     public static final String END_PUBLIC_KEY = "-----END PUBLIC KEY-----";
     public static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
+
+    public static final String CRYPT4GH_AUTH_MAGIC = "c4gh-v1";
 
     private static KeyUtils ourInstance = new KeyUtils();
 
@@ -209,48 +219,120 @@ public class KeyUtils {
     }
 
     /**
-     * Reads PEM file (either public key or private key). Can be both: OpenSSL format or just the bytes representation.
+     * Reads public key (OpenSSL or Crypt4GH format) file.
      *
-     * @param keyFile Input file to read.
-     * @param keyType Type of the key: either PublicKey.class or PrivateKey.class
-     * @param <T>     PublicKey or PrivateKey, depending on the second parameter.
-     * @return Public or Private key correspondingly.
+     * @param keyFile Public key file.
+     * @return Public key.
      * @throws IOException              If the file can't be read.
      * @throws GeneralSecurityException If the key can't be constructed from the given file.
      */
-    public <T> T readPEMFile(File keyFile, Class<T> keyType) throws IOException, GeneralSecurityException {
+    public PublicKey readPublicKey(File keyFile) throws IOException, GeneralSecurityException {
         String keyLines = FileUtils.readFileToString(keyFile, Charset.defaultCharset());
-        return readKey(keyLines, keyType);
+        return readPublicKey(keyLines);
     }
 
     /**
-     * Reads key from string (either public key or private key). Can be both: OpenSSL format or just the bytes representation.
+     * Reads public key (OpenSSL or Crypt4GH format).
      *
-     * @param keyMaterial Key contents.
-     * @param keyType     Type of the key: either PublicKey.class or PrivateKey.class
-     * @param <T>         PublicKey or PrivateKey, depending on the second parameter.
-     * @return Public or Private key correspondingly.
-     * @throws GeneralSecurityException If the key can't be constructed from the given file.
+     * @param keyMaterial Content of the key file.
+     * @return Public key.
+     * @throws GeneralSecurityException If the key can't be constructed from the given content.
      */
-    @SuppressWarnings("unchecked")
-    public <T> T readKey(String keyMaterial, Class<T> keyType) throws GeneralSecurityException {
+    public PublicKey readPublicKey(String keyMaterial) throws GeneralSecurityException {
         KeyFactory keyFactory = KeyFactory.getInstance(X25519);
         byte[] decodedKey = decodeKey(keyMaterial);
-        if (keyType.isAssignableFrom(PublicKey.class)) {
-            try {
-                return (T) keyFactory.generatePublic(new X509EncodedKeySpec(decodedKey));
-            } catch (InvalidKeySpecException e) { // not an OpenSSL format
-                return (T) constructPublicKey(decodedKey);
-            }
+        try {
+            return keyFactory.generatePublic(new X509EncodedKeySpec(decodedKey));
+        } catch (InvalidKeySpecException e) {
+            return constructPublicKey(decodedKey);
         }
-        if (keyType.isAssignableFrom(PrivateKey.class)) {
-            try {
-                return (T) keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decodedKey));
-            } catch (InvalidKeySpecException e) { // not an OpenSSL format
-                return (T) constructPrivateKey(decodedKey);
-            }
+    }
+
+    /**
+     * Reads private key (OpenSSL or Crypt4GH format) file.
+     *
+     * @param keyFile  Private key file.
+     * @param password Optional password (if private key is password-protected). Can be null for unencrypted key.
+     * @return Private key.
+     * @throws IOException              If the file can't be read.
+     * @throws GeneralSecurityException If the key can't be constructed from the given file.
+     */
+    public PrivateKey readPrivateKey(File keyFile, char[] password) throws IOException, GeneralSecurityException {
+        String keyLines = FileUtils.readFileToString(keyFile, Charset.defaultCharset());
+        return readPrivateKey(keyLines, password);
+    }
+
+    /**
+     * Reads private key (OpenSSL or Crypt4GH format) file.
+     *
+     * @param keyMaterial Content of the key file.
+     * @param password    Optional password (if private key is encrypted).
+     * @return Private key.
+     * @throws GeneralSecurityException If the key can't be constructed from the given content.
+     * @throws IllegalArgumentException If the key is password-protected, but the password was <code>null</code>.
+     */
+    public PrivateKey readPrivateKey(String keyMaterial, char[] password) throws GeneralSecurityException, IllegalArgumentException {
+        KeyFactory keyFactory = KeyFactory.getInstance(X25519);
+        byte[] decodedKey = decodeKey(keyMaterial);
+        try {
+            return keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decodedKey));
+        } catch (InvalidKeySpecException e) {
+            return readCrypt4GHPrivateKey(decodedKey, password);
         }
-        throw new RuntimeException("keyType must be either PublicKey or PrivateKey");
+    }
+
+    /**
+     * Reads Crypt4GH private key.
+     *
+     * @param keyMaterial Decoded key file content.
+     * @param password    Optional password (if private key is password-protected). Can be null for unencrypted key.
+     * @return Private key.
+     * @throws GeneralSecurityException If the key can't be constructed from the given content.
+     * @throws IllegalArgumentException If the key is password-protected, but the password was <code>null</code>.
+     */
+    public PrivateKey readCrypt4GHPrivateKey(byte[] keyMaterial, char[] password) throws GeneralSecurityException, IllegalArgumentException {
+        ByteBuffer byteBuffer = ByteBuffer.wrap(keyMaterial).order(ByteOrder.BIG_ENDIAN);
+        byteBuffer.get(new byte[CRYPT4GH_AUTH_MAGIC.length()]);
+        KDF kdf = KDF.valueOf(readString(byteBuffer).toUpperCase());
+        int rounds = 0;
+        byte[] salt = new byte[0];
+        if (kdf != KDF.NONE) {
+            if (password == null) {
+                throw new IllegalArgumentException("Private key is password-protected, need a password for decryption");
+            }
+            short roundsAndSaltLength = byteBuffer.getShort();
+            int saltLength = roundsAndSaltLength - 4;
+            rounds = byteBuffer.getInt();
+            salt = readArray(byteBuffer, saltLength);
+        }
+        Cipher cipher = Cipher.valueOf(readString(byteBuffer).toUpperCase());
+        short keyLength = byteBuffer.getShort();
+        byte[] payload = readArray(byteBuffer, keyLength);
+        if (kdf == KDF.NONE) {
+            if (cipher != Cipher.NONE) {
+                throw new GeneralSecurityException("Invalid private key: KDF is 'none', but cipher is not 'none");
+            }
+            return constructPrivateKey(payload);
+        }
+        SecretKeySpec derivedKey = new SecretKeySpec(kdf.derive(rounds, password, salt), CHA_CHA_20);
+        Arrays.fill(password, (char) 0);
+        javax.crypto.Cipher decryption = javax.crypto.Cipher.getInstance(CHA_CHA_20_POLY_1305);
+        byte[] nonce = Arrays.copyOfRange(payload, 0, NONCE_SIZE);
+        byte[] key = Arrays.copyOfRange(payload, NONCE_SIZE, payload.length);
+        decryption.init(javax.crypto.Cipher.DECRYPT_MODE, derivedKey, new IvParameterSpec(nonce));
+        byte[] decryptedPayload = decryption.doFinal(key);
+        return constructPrivateKey(decryptedPayload);
+    }
+
+    private String readString(ByteBuffer byteBuffer) {
+        short length = byteBuffer.getShort();
+        return new String(readArray(byteBuffer, length));
+    }
+
+    private byte[] readArray(ByteBuffer byteBuffer, int length) {
+        byte[] array = new byte[length];
+        byteBuffer.get(array);
+        return array;
     }
 
     /**

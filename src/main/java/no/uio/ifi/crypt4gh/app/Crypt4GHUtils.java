@@ -27,6 +27,7 @@ class Crypt4GHUtils {
     }
 
     private KeyUtils keyUtils = KeyUtils.getInstance();
+    private ConsoleUtils consoleUtils = ConsoleUtils.getInstance();
 
     private Crypt4GHUtils() {
     }
@@ -34,7 +35,6 @@ class Crypt4GHUtils {
     void generateX25519KeyPair(String keyName) throws Exception {
         KeyUtils keyUtils = KeyUtils.getInstance();
         KeyPair keyPair = keyUtils.generateKeyPair();
-        ConsoleUtils consoleUtils = ConsoleUtils.getInstance();
         File pubFile = new File(keyName + ".pub.pem");
         if (!pubFile.exists() || pubFile.exists() &&
                 consoleUtils.promptForConfirmation("Public key file already exists: do you want to overwrite it?")) {
@@ -57,8 +57,8 @@ class Crypt4GHUtils {
         if (dataOutFile.exists() && !ConsoleUtils.getInstance().promptForConfirmation(dataOutFile.getAbsolutePath() + " already exists. Overwrite?")) {
             return;
         }
-        PrivateKey privateKey = keyUtils.readPEMFile(new File(privateKeyFilePath), PrivateKey.class);
-        PublicKey publicKey = keyUtils.readPEMFile(new File(publicKeyFilePath), PublicKey.class);
+        PrivateKey privateKey = readPrivateKey(privateKeyFilePath);
+        PublicKey publicKey = keyUtils.readPublicKey(new File(publicKeyFilePath));
         try (InputStream inputStream = new FileInputStream(dataInFile);
              OutputStream outputStream = new FileOutputStream(dataOutFile);
              Crypt4GHOutputStream crypt4GHOutputStream = new Crypt4GHOutputStream(outputStream, privateKey, publicKey)) {
@@ -77,7 +77,7 @@ class Crypt4GHUtils {
         if (dataOutFile.exists() && !ConsoleUtils.getInstance().promptForConfirmation(dataOutFile.getAbsolutePath() + " already exists. Overwrite?")) {
             return;
         }
-        PrivateKey privateKey = keyUtils.readPEMFile(new File(privateKeyFilePath), PrivateKey.class);
+        PrivateKey privateKey = readPrivateKey(privateKeyFilePath);
         System.out.println("Decryption initialized...");
         try (FileInputStream inputStream = new FileInputStream(dataInFile);
              OutputStream outputStream = new FileOutputStream(dataOutFile);
@@ -88,6 +88,17 @@ class Crypt4GHUtils {
             System.err.println(e.getMessage());
             dataOutFile.delete();
         }
+    }
+
+    private PrivateKey readPrivateKey(String privateKeyFilePath) throws IOException, GeneralSecurityException {
+        PrivateKey privateKey;
+        try {
+            privateKey = keyUtils.readPrivateKey(new File(privateKeyFilePath), null);
+        } catch (IllegalArgumentException e) {
+            char[] password = consoleUtils.readPassword("Password for the private key: ", 8);
+            privateKey = keyUtils.readPrivateKey(new File(privateKeyFilePath), password);
+        }
+        return privateKey;
     }
 
 }
