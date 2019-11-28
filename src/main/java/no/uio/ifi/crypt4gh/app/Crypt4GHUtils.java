@@ -5,6 +5,7 @@ import no.uio.ifi.crypt4gh.stream.Crypt4GHInputStream;
 import no.uio.ifi.crypt4gh.stream.Crypt4GHOutputStream;
 import no.uio.ifi.crypt4gh.util.KeyUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -33,7 +34,7 @@ class Crypt4GHUtils {
     private Crypt4GHUtils() {
     }
 
-    void generateX25519KeyPair(String keyName, String keyFormat) throws Exception {
+    void generateX25519KeyPair(String keyName, String keyFormat, String keyPassword) throws Exception {
         KeyUtils keyUtils = KeyUtils.getInstance();
         KeyPair keyPair = keyUtils.generateKeyPair();
         File pubFile = new File(keyName + ".pub.pem");
@@ -49,7 +50,16 @@ class Crypt4GHUtils {
         if (!secFile.exists() || secFile.exists() &&
                 consoleUtils.promptForConfirmation("Private key file already exists: do you want to overwrite it?")) {
             if (Format.CRYPT4GH.name().equalsIgnoreCase(keyFormat)) {
-                char[] password = consoleUtils.readPassword("Password for the private key: ", 4);
+                char[] password;
+                if (StringUtils.isEmpty(keyPassword)) {
+                    password = consoleUtils.readPassword("Password for the private key: ", 4);
+                } else {
+                    if (keyPassword.length() < 4) {
+                        password = consoleUtils.readPassword("Password for the private key: ", 4);
+                    } else {
+                        password = keyPassword.toCharArray();
+                    }
+                }
                 keyUtils.writeCrypt4GHKey(secFile, keyPair.getPrivate(), password);
             } else {
                 keyUtils.writeOpenSSLKey(secFile, keyPair.getPrivate());

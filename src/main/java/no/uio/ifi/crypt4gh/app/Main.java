@@ -11,6 +11,7 @@ public class Main {
     public static final String ENCRYPT = "e";
     public static final String DECRYPT = "d";
     public static final String KEY_FORMAT = "kf";
+    public static final String KEY_PASSWORD = "kp";
     public static final String PUBLIC_KEY = "pk";
     public static final String SECRET_KEY = "sk";
     public static final String VERSION = "v";
@@ -34,7 +35,8 @@ public class Main {
         mainOptions.addOption(new Option(HELP, "help", false, "print this message"));
         options.addOptionGroup(mainOptions);
 
-        options.addOption(new Option(KEY_FORMAT, "keyformat", true, "key format to use for generated keys (OpenSSL or Crypt4GH)"));
+        options.addOption(new Option(KEY_FORMAT, "keyform", true, "key format to use for generated keys (OpenSSL or Crypt4GH)"));
+        options.addOption(new Option(KEY_PASSWORD, "keypass", true, "password for Crypt4GH private key (will be prompted afterwords if skipped)"));
         options.addOption(new Option(PUBLIC_KEY, "pubkey", true, "public key to use (specify key file)"));
         options.addOption(new Option(SECRET_KEY, "seckey", true, "secret key to use (specify key file)"));
 
@@ -51,7 +53,7 @@ public class Main {
             } else if (line.hasOption(VERSION)) {
                 printVersion();
             } else if (line.hasOption(GENERATE)) {
-                crypt4GHUtils.generateX25519KeyPair(line.getOptionValue(GENERATE), line.getOptionValue(KEY_FORMAT));
+                crypt4GHUtils.generateX25519KeyPair(line.getOptionValue(GENERATE), line.getOptionValue(KEY_FORMAT), line.getOptionValue(KEY_PASSWORD));
             } else {
                 if (line.hasOption(ENCRYPT)) {
                     if (!line.hasOption(PUBLIC_KEY)) {
