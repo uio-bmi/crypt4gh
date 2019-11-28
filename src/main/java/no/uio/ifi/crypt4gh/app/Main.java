@@ -10,6 +10,7 @@ public class Main {
     public static final String GENERATE = "g";
     public static final String ENCRYPT = "e";
     public static final String DECRYPT = "d";
+    public static final String KEY_FORMAT = "kf";
     public static final String PUBLIC_KEY = "pk";
     public static final String SECRET_KEY = "sk";
     public static final String VERSION = "v";
@@ -25,13 +26,15 @@ public class Main {
         Options options = new Options();
 
         OptionGroup mainOptions = new OptionGroup();
-        mainOptions.addOption(new Option(GENERATE, "generate", true, "generate key pair (specify desired key name)"));
+        Option generateKeyOption = new Option(GENERATE, "generate", true, "generate key pair (specify desired key name)");
+        mainOptions.addOption(generateKeyOption);
         mainOptions.addOption(new Option(ENCRYPT, "encrypt", true, "encrypt the file (specify file to encrypt)"));
         mainOptions.addOption(new Option(DECRYPT, "decrypt", true, "decrypt the file (specify file to decrypt)"));
         mainOptions.addOption(new Option(VERSION, "version", false, "print application's version"));
         mainOptions.addOption(new Option(HELP, "help", false, "print this message"));
         options.addOptionGroup(mainOptions);
 
+        options.addOption(new Option(KEY_FORMAT, "keyformat", true, "key format to use for generated keys (OpenSSL or Crypt4GH)"));
         options.addOption(new Option(PUBLIC_KEY, "pubkey", true, "public key to use (specify key file)"));
         options.addOption(new Option(SECRET_KEY, "seckey", true, "secret key to use (specify key file)"));
 
@@ -48,7 +51,7 @@ public class Main {
             } else if (line.hasOption(VERSION)) {
                 printVersion();
             } else if (line.hasOption(GENERATE)) {
-                crypt4GHUtils.generateX25519KeyPair(line.getOptionValue(GENERATE));
+                crypt4GHUtils.generateX25519KeyPair(line.getOptionValue(GENERATE), line.getOptionValue(KEY_FORMAT));
             } else {
                 if (line.hasOption(ENCRYPT)) {
                     if (!line.hasOption(PUBLIC_KEY)) {

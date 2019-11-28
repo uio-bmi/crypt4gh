@@ -12,6 +12,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 
+import static at.favre.lib.crypto.bcrypt.BCrypt.SALT_LENGTH;
 import static no.uio.ifi.crypt4gh.pojo.header.X25519ChaCha20IETFPoly1305HeaderPacket.CHA_CHA_20_POLY_1305;
 import static no.uio.ifi.crypt4gh.pojo.header.X25519ChaCha20IETFPoly1305HeaderPacket.NONCE_SIZE;
 
@@ -39,9 +41,13 @@ public class KeyUtils {
     public static final String X25519 = "X25519";
 
     public static final String BEGIN_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----";
-    public static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
     public static final String END_PUBLIC_KEY = "-----END PUBLIC KEY-----";
+    public static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
     public static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
+    public static final String BEGIN_CRYPT4GH_PUBLIC_KEY = "-----BEGIN CRYPT4GH PUBLIC KEY-----";
+    public static final String END_CRYPT4GH_PUBLIC_KEY = "-----END CRYPT4GH PUBLIC KEY-----";
+    public static final String BEGIN_CRYPT4GH_ENCRYPTED_PRIVATE_KEY = "-----BEGIN CRYPT4GH ENCRYPTED PRIVATE KEY-----";
+    public static final String END_CRYPT4GH_ENCRYPTED_PRIVATE_KEY = "-----END CRYPT4GH ENCRYPTED PRIVATE KEY-----";
 
     public static final String CRYPT4GH_AUTH_MAGIC = "c4gh-v1";
 
@@ -293,7 +299,7 @@ public class KeyUtils {
     public PrivateKey readCrypt4GHPrivateKey(byte[] keyMaterial, char[] password) throws GeneralSecurityException, IllegalArgumentException {
         ByteBuffer byteBuffer = ByteBuffer.wrap(keyMaterial).order(ByteOrder.BIG_ENDIAN);
         byteBuffer.get(new byte[CRYPT4GH_AUTH_MAGIC.length()]);
-        KDF kdf = KDF.valueOf(readString(byteBuffer).toUpperCase());
+        KDF kdf = KDF.valueOf(decodeString(byteBuffer).toUpperCase());
         int rounds = 0;
         byte[] salt = new byte[0];
         if (kdf != KDF.NONE) {
@@ -303,11 +309,11 @@ public class KeyUtils {
             short roundsAndSaltLength = byteBuffer.getShort();
             int saltLength = roundsAndSaltLength - 4;
             rounds = byteBuffer.getInt();
-            salt = readArray(byteBuffer, saltLength);
+            salt = decodeArray(byteBuffer, saltLength);
         }
-        Cipher cipher = Cipher.valueOf(readString(byteBuffer).toUpperCase());
+        Cipher cipher = Cipher.valueOf(decodeString(byteBuffer).toUpperCase());
         short keyLength = byteBuffer.getShort();
-        byte[] payload = readArray(byteBuffer, keyLength);
+        byte[] payload = decodeArray(byteBuffer, keyLength);
         if (kdf == KDF.NONE) {
             if (cipher != Cipher.NONE) {
                 throw new GeneralSecurityException("Invalid private key: KDF is 'none', but cipher is not 'none");
@@ -324,17 +330,6 @@ public class KeyUtils {
         return constructPrivateKey(decryptedPayload);
     }
 
-    private String readString(ByteBuffer byteBuffer) {
-        short length = byteBuffer.getShort();
-        return new String(readArray(byteBuffer, length));
-    }
-
-    private byte[] readArray(ByteBuffer byteBuffer, int length) {
-        byte[] array = new byte[length];
-        byteBuffer.get(array);
-        return array;
-    }
-
     /**
      * Decodes Base64 key string, surrounded by header and footer.
      *
@@ -347,13 +342,13 @@ public class KeyUtils {
     }
 
     /**
-     * Writes the key to a file.
+     * Writes the key to a file in OpenSSL format.
      *
      * @param keyFile Key file to create.
      * @param key     Key to write.
      * @throws IOException If the file can't be written.
      */
-    public void writePEMFile(File keyFile, Key key) throws IOException {
+    public void writeOpenSSLKey(File keyFile, Key key) throws IOException {
         Collection<String> keyLines = new ArrayList<>();
         boolean isPublic = key instanceof PublicKey;
         if (isPublic) {
@@ -368,6 +363,68 @@ public class KeyUtils {
             keyLines.add(END_PRIVATE_KEY);
         }
         FileUtils.writeLines(keyFile, keyLines);
+    }
+
+    /**
+     * Writes the key to a file in Crypt4GH format.
+     *
+     * @param keyFile  Key file to create.
+     * @param key      Key to write.
+     * @param password Password to lock private key.
+     * @throws IOException If the file can't be written.
+     */
+    public void writeCrypt4GHKey(File keyFile, Key key, char[] password) throws IOException, GeneralSecurityException {
+        Collection<String> keyLines = new ArrayList<>();
+        boolean isPublic = key instanceof PublicKey;
+        byte[] encodedKey = encodeKey(key);
+        if (isPublic) {
+            keyLines.add(BEGIN_CRYPT4GH_PUBLIC_KEY);
+            keyLines.add(Base64.getEncoder().encodeToString(encodedKey));
+            keyLines.add(END_CRYPT4GH_PUBLIC_KEY);
+        } else {
+            byte[] salt = new byte[SALT_LENGTH];
+            SecureRandom.getInstanceStrong().nextBytes(salt);
+            SecretKeySpec derivedKey = new SecretKeySpec(KDF.SCRYPT.derive(0, password, salt), CHA_CHA_20);
+            Arrays.fill(password, (char) 0);
+            byte[] nonce = new byte[NONCE_SIZE];
+            SecureRandom.getInstanceStrong().nextBytes(nonce);
+            javax.crypto.Cipher encryption = javax.crypto.Cipher.getInstance(CHA_CHA_20_POLY_1305);
+            encryption.init(javax.crypto.Cipher.ENCRYPT_MODE, derivedKey, new IvParameterSpec(nonce));
+            byte[] encryptedKey = encryption.doFinal(encodedKey);
+
+            keyLines.add(BEGIN_CRYPT4GH_ENCRYPTED_PRIVATE_KEY);
+            try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+                byteArrayOutputStream.write(CRYPT4GH_AUTH_MAGIC.getBytes());
+                byteArrayOutputStream.write(encodeString(KDF.SCRYPT.name().toLowerCase()));
+                byteArrayOutputStream.write(encodeArray(ArrayUtils.addAll(new byte[4], salt)));
+                byteArrayOutputStream.write(encodeString(Cipher.CHACHA20_POLY1305.name().toLowerCase()));
+                byteArrayOutputStream.write(encodeArray(ArrayUtils.addAll(nonce, encryptedKey)));
+                keyLines.add(Base64.getEncoder().encodeToString(byteArrayOutputStream.toByteArray()));
+            }
+            keyLines.add(END_CRYPT4GH_ENCRYPTED_PRIVATE_KEY);
+        }
+        FileUtils.writeLines(keyFile, keyLines);
+    }
+
+    private String decodeString(ByteBuffer byteBuffer) {
+        short length = byteBuffer.getShort();
+        return new String(decodeArray(byteBuffer, length));
+    }
+
+    private byte[] decodeArray(ByteBuffer byteBuffer, int length) {
+        byte[] array = new byte[length];
+        byteBuffer.get(array);
+        return array;
+    }
+
+    private byte[] encodeString(String string) {
+        short length = (short) string.length();
+        return ByteBuffer.allocate(2 + length).order(ByteOrder.BIG_ENDIAN).putShort(length).put(string.getBytes()).array();
+    }
+
+    private byte[] encodeArray(byte[] array) {
+        short length = (short) array.length;
+        return ByteBuffer.allocate(2 + length).order(ByteOrder.BIG_ENDIAN).putShort(length).put(array).array();
     }
 
     private static class StaticSecureRandom extends SecureRandom {

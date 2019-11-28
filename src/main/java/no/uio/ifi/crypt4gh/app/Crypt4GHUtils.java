@@ -1,5 +1,6 @@
 package no.uio.ifi.crypt4gh.app;
 
+import no.uio.ifi.crypt4gh.pojo.key.Format;
 import no.uio.ifi.crypt4gh.stream.Crypt4GHInputStream;
 import no.uio.ifi.crypt4gh.stream.Crypt4GHOutputStream;
 import no.uio.ifi.crypt4gh.util.KeyUtils;
@@ -32,18 +33,27 @@ class Crypt4GHUtils {
     private Crypt4GHUtils() {
     }
 
-    void generateX25519KeyPair(String keyName) throws Exception {
+    void generateX25519KeyPair(String keyName, String keyFormat) throws Exception {
         KeyUtils keyUtils = KeyUtils.getInstance();
         KeyPair keyPair = keyUtils.generateKeyPair();
         File pubFile = new File(keyName + ".pub.pem");
         if (!pubFile.exists() || pubFile.exists() &&
                 consoleUtils.promptForConfirmation("Public key file already exists: do you want to overwrite it?")) {
-            keyUtils.writePEMFile(pubFile, keyPair.getPublic());
+            if (Format.CRYPT4GH.name().equalsIgnoreCase(keyFormat)) {
+                keyUtils.writeCrypt4GHKey(pubFile, keyPair.getPublic(), null);
+            } else {
+                keyUtils.writeOpenSSLKey(pubFile, keyPair.getPublic());
+            }
         }
         File secFile = new File(keyName + ".sec.pem");
         if (!secFile.exists() || secFile.exists() &&
                 consoleUtils.promptForConfirmation("Private key file already exists: do you want to overwrite it?")) {
-            keyUtils.writePEMFile(secFile, keyPair.getPrivate());
+            if (Format.CRYPT4GH.name().equalsIgnoreCase(keyFormat)) {
+                char[] password = consoleUtils.readPassword("Password for the private key: ", 4);
+                keyUtils.writeCrypt4GHKey(secFile, keyPair.getPrivate(), password);
+            } else {
+                keyUtils.writeOpenSSLKey(secFile, keyPair.getPrivate());
+            }
         }
         Set<PosixFilePermission> perms = new HashSet<>();
         perms.add(PosixFilePermission.OWNER_READ);
