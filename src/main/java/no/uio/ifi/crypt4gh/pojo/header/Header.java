@@ -61,6 +61,18 @@ public class Header implements Crypt4GHEntity {
         return result;
     }
 
+    public void removeDataEditList() {
+        Iterator<HeaderPacket> iterator = headerPackets.iterator();
+        while (iterator.hasNext()) {
+            HeaderPacket headerPacket = iterator.next();
+            EncryptableHeaderPacket encryptablePayload = headerPacket.getEncryptablePayload();
+            HeaderPacketType packetType = encryptablePayload.getPacketType();
+            if (packetType == HeaderPacketType.DATA_EDIT_LIST) {
+                iterator.remove();
+            }
+        }
+    }
+
     public Optional<DataEditList> getDataEditList() {
         for (HeaderPacket headerPacket : headerPackets) {
             EncryptableHeaderPacket encryptablePayload = headerPacket.getEncryptablePayload();
