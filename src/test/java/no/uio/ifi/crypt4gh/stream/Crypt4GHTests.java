@@ -39,7 +39,7 @@ public class Crypt4GHTests {
     @Test
     public void memoryReencryptionCrypt4GHKeys() throws Exception {
         PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("writer.sec").getFile()), "asdf".toCharArray());
-        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("reader.sec").getFile()), "asdf".toCharArray());
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("reader.sec").getFile()), "password".toCharArray());
         PublicKey readerPublicKey = keyUtils.readPublicKey(new File(getClass().getClassLoader().getResource("reader.pub").getFile()));
 
         byte[] unencryptedData = new byte[1024 * 1024];

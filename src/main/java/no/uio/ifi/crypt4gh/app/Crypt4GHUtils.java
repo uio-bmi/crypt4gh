@@ -95,7 +95,7 @@ class Crypt4GHUtils {
         try {
             privateKey = keyUtils.readPrivateKey(new File(privateKeyFilePath), null);
         } catch (IllegalArgumentException e) {
-            char[] password = consoleUtils.readPassword("Password for the private key: ", 8);
+            char[] password = consoleUtils.readPassword("Password for the private key: ", 4);
             privateKey = keyUtils.readPrivateKey(new File(privateKeyFilePath), password);
         }
         return privateKey;
