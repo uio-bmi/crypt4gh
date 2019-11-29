@@ -64,7 +64,7 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
         DataEncryptionParameters dataEncryptionParameters = new ChaCha20IETFPoly1305EncryptionParameters(dataKey);
         HeaderPacket dataEncryptionParametersHeaderPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(dataEncryptionParameters, writerPrivateKey, readerPublicKey);
         HeaderPacket dataEditListHeaderPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(dataEditList, writerPrivateKey, readerPublicKey);
-        List<HeaderPacket> headerPackets = new ArrayList<>(Arrays.asList(dataEncryptionParametersHeaderPacket, dataEditListHeaderPacket));
+        List<HeaderPacket> headerPackets = new ArrayList<>(List.of(dataEncryptionParametersHeaderPacket, dataEditListHeaderPacket));
         this.header = new Header(headerPackets);
         out.write(header.serialize());
         Collection<DataEncryptionParameters> dataEncryptionParametersList = header.getDataEncryptionParametersList();
