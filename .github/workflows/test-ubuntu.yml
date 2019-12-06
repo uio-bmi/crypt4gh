@@ -1,4 +1,4 @@
-name: Java CI
+name: Java CI Ubuntu
 
 on:
   push:
@@ -9,7 +9,7 @@ jobs:
 
   build:
 
-    runs-on: macOS-latest
+    runs-on: ubuntu-latest
 
     steps:
 
