@@ -28,6 +28,7 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
     private int[] buffer;
     private int bytesRead;
     private Collection<DataEncryptionParameters> dataEncryptionParametersList;
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private Optional<DataEditList> dataEditList;
     private int encryptedSegmentSize;
     private int lastDecryptedSegment = -1;
@@ -137,6 +138,7 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
         return n;
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private synchronized void skipSegments(long n) throws IOException {
         in.skip(n * encryptedSegmentSize);
         lastDecryptedSegment += n;
