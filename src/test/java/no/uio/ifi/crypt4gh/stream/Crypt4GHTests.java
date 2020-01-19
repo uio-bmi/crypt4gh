@@ -19,12 +19,14 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Objects;
 
 import static no.uio.ifi.crypt4gh.pojo.body.Segment.UNENCRYPTED_DATA_SEGMENT_SIZE;
 
 /**
  * A bunch of tests for Crypt4GH Input/Output streams with or without skip-access and DataEditLists.
  */
+@SuppressWarnings("ResultOfMethodCallIgnored")
 @RunWith(JUnit4.class)
 public class Crypt4GHTests {
 
@@ -38,9 +40,9 @@ public class Crypt4GHTests {
      */
     @Test
     public void memoryReencryptionCrypt4GHKeys() throws Exception {
-        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("writer.sec").getFile()), "asdf".toCharArray());
-        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("reader.sec").getFile()), "password".toCharArray());
-        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(getClass().getClassLoader().getResource("reader.pub").getFile()));
+        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("writer.sec")).getFile()), "asdf".toCharArray());
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec")).getFile()), "password".toCharArray());
+        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.pub")).getFile()));
 
         byte[] unencryptedData = new byte[1024 * 1024];
         SecureRandom.getInstanceStrong().nextBytes(unencryptedData);
@@ -65,9 +67,9 @@ public class Crypt4GHTests {
      */
     @Test
     public void memoryReencryptionOpenSSLKeys() throws Exception {
-        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), null);
-        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), null);
-        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()));
+        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("writer.sec.pem")).getFile()), null);
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec.pem")).getFile()), null);
+        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.pub.pem")).getFile()));
 
         byte[] unencryptedData = new byte[1024 * 1024];
         SecureRandom.getInstanceStrong().nextBytes(unencryptedData);
@@ -120,11 +122,11 @@ public class Crypt4GHTests {
      */
     @Test
     public void fileReencryptionTest() throws Exception {
-        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), null);
-        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), null);
-        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()));
+        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("writer.sec.pem")).getFile()), null);
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec.pem")).getFile()), null);
+        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.pub.pem")).getFile()));
 
-        File unencryptedFile = new File(getClass().getClassLoader().getResource("sample.txt").getFile());
+        File unencryptedFile = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("sample.txt")).getFile());
         File encryptedFile = Files.createTempFile("test", "enc").toFile();
         File decryptedFile = Files.createTempFile("test", "dec").toFile();
         try (FileInputStream inputStream = new FileInputStream(unencryptedFile);
@@ -151,11 +153,11 @@ public class Crypt4GHTests {
      */
     @Test
     public void partialFileReencryptionTest() throws Exception {
-        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), null);
-        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), null);
-        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()));
+        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("writer.sec.pem")).getFile()), null);
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec.pem")).getFile()), null);
+        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.pub.pem")).getFile()));
 
-        File unencryptedFile = new File(getClass().getClassLoader().getResource("sample.txt").getFile());
+        File unencryptedFile = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("sample.txt")).getFile());
         File encryptedFile = Files.createTempFile("test", "enc").toFile();
         File decryptedFile = Files.createTempFile("test", "dec").toFile();
         try (FileInputStream inputStream = new FileInputStream(unencryptedFile);
@@ -183,11 +185,11 @@ public class Crypt4GHTests {
      */
     @Test
     public void fileReencryptionWithDataEditListTest() throws Exception {
-        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), null);
-        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), null);
-        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()));
+        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("writer.sec.pem")).getFile()), null);
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec.pem")).getFile()), null);
+        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.pub.pem")).getFile()));
 
-        File unencryptedFile = new File(getClass().getClassLoader().getResource("sample.txt").getFile());
+        File unencryptedFile = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("sample.txt")).getFile());
         File encryptedFile = Files.createTempFile("test", "enc").toFile();
         File decryptedFile = Files.createTempFile("test", "dec").toFile();
         try (FileInputStream inputStream = new FileInputStream(unencryptedFile);
@@ -222,11 +224,11 @@ public class Crypt4GHTests {
      */
     @Test
     public void partialFileReencryptionWithDataEditListInOutputStreamTest() throws Exception {
-        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), null);
-        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), null);
-        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()));
+        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("writer.sec.pem")).getFile()), null);
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec.pem")).getFile()), null);
+        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.pub.pem")).getFile()));
 
-        File unencryptedFile = new File(getClass().getClassLoader().getResource("sample.txt").getFile());
+        File unencryptedFile = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("sample.txt")).getFile());
         File encryptedFile = Files.createTempFile("test", "enc").toFile();
         File decryptedFile = Files.createTempFile("test", "dec").toFile();
         DataEditList dataEditList = new DataEditList(new long[]{950, 837, 510, 847});
@@ -260,11 +262,11 @@ public class Crypt4GHTests {
      */
     @Test
     public void partialFileReencryptionWithDataEditListInInputStreamTest() throws Exception {
-        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), null);
-        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), null);
-        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()));
+        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("writer.sec.pem")).getFile()), null);
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec.pem")).getFile()), null);
+        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.pub.pem")).getFile()));
 
-        File unencryptedFile = new File(getClass().getClassLoader().getResource("sample.txt").getFile());
+        File unencryptedFile = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("sample.txt")).getFile());
         File encryptedFile = Files.createTempFile("test", "enc").toFile();
         File decryptedFile = Files.createTempFile("test", "dec").toFile();
         try (FileInputStream inputStream = new FileInputStream(unencryptedFile);
@@ -297,12 +299,12 @@ public class Crypt4GHTests {
      */
     @Test
     public void setRecipientToHeaderTest() throws Exception {
-        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), null);
-        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), null);
-        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()));
+        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("writer.sec.pem")).getFile()), null);
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec.pem")).getFile()), null);
+        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.pub.pem")).getFile()));
         KeyPair anotherReaderKeyPair = keyUtils.generateKeyPair();
 
-        File unencryptedFile = new File(getClass().getClassLoader().getResource("sample.txt").getFile());
+        File unencryptedFile = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("sample.txt")).getFile());
         File encryptedFile = Files.createTempFile("test", "enc").toFile();
         File encryptedFileWithAddedRecipient = Files.createTempFile("test2", "enc").toFile();
         File decryptedFile = Files.createTempFile("test", "dec").toFile();
@@ -351,12 +353,12 @@ public class Crypt4GHTests {
      */
     @Test
     public void addRecipientToHeaderTest() throws Exception {
-        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("writer.sec.pem").getFile()), null);
-        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(getClass().getClassLoader().getResource("reader.sec.pem").getFile()), null);
-        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(getClass().getClassLoader().getResource("reader.pub.pem").getFile()));
+        PrivateKey writerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("writer.sec.pem")).getFile()), null);
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec.pem")).getFile()), null);
+        PublicKey readerPublicKey = keyUtils.readPublicKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.pub.pem")).getFile()));
         KeyPair anotherReaderKeyPair = keyUtils.generateKeyPair();
 
-        File unencryptedFile = new File(getClass().getClassLoader().getResource("sample.txt").getFile());
+        File unencryptedFile = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("sample.txt")).getFile());
         File encryptedFile = Files.createTempFile("test", "enc").toFile();
         File encryptedFileWithAddedRecipient = Files.createTempFile("test2", "enc").toFile();
         File decryptedFile = Files.createTempFile("test", "dec").toFile();
