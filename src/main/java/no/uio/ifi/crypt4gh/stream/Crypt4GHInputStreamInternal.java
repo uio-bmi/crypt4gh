@@ -148,7 +148,7 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
         try {
             byte[] encryptedSegmentBytes = in.readNBytes(encryptedSegmentSize);
             if (encryptedSegmentBytes.length == 0) {
-                Arrays.fill(buffer, (byte) (-1));
+                Arrays.fill(buffer, -1);
             } else {
                 decryptSegment(encryptedSegmentBytes);
             }
