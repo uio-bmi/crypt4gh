@@ -336,7 +336,7 @@ public class KeyUtils {
      * @return Decoded key as byte array.
      */
     public byte[] decodeKey(String keyMaterial) {
-        keyMaterial = keyMaterial.replaceAll("-----(.*)-----", "").replace(System.lineSeparator(), "").replace(" ", "").trim();
+        keyMaterial = keyMaterial.replaceAll("-----(.*?)-----", "").replace(System.lineSeparator(), "").replace(" ", "").trim();
         return Base64.getDecoder().decode(keyMaterial);
     }
 
