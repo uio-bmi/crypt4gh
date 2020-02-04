@@ -5,6 +5,7 @@ import com.rfksystems.blake2b.security.Blake2bProvider;
 import no.uio.ifi.crypt4gh.pojo.key.Cipher;
 import no.uio.ifi.crypt4gh.pojo.key.KDF;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
 import javax.crypto.KeyAgreement;
@@ -12,9 +13,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -342,13 +341,13 @@ public class KeyUtils {
     }
 
     /**
-     * Writes the key to a file in OpenSSL format.
+     * Writes the key using a supplied writer in OpenSSL format.
      *
-     * @param keyFile Key file to create.
-     * @param key     Key to write.
+     * @param writer Writer to use.
+     * @param key    Key to write.
      * @throws IOException If the file can't be written.
      */
-    public void writeOpenSSLKey(File keyFile, Key key) throws IOException {
+    public void writeOpenSSLKey(Writer writer, Key key) throws IOException {
         Collection<String> keyLines = new ArrayList<>();
         boolean isPublic = key instanceof PublicKey;
         if (isPublic) {
@@ -362,18 +361,18 @@ public class KeyUtils {
         } else {
             keyLines.add(END_PRIVATE_KEY);
         }
-        FileUtils.writeLines(keyFile, keyLines);
+        IOUtils.writeLines(keyLines, null, writer);
     }
 
     /**
-     * Writes the key to a file in Crypt4GH format.
+     * Writes the key using a supplied writer in Crypt4GH format.
      *
-     * @param keyFile  Key file to create.
+     * @param writer   Writer to use.
      * @param key      Key to write.
      * @param password Password to lock private key.
      * @throws IOException If the file can't be written.
      */
-    public void writeCrypt4GHKey(File keyFile, Key key, char[] password) throws IOException, GeneralSecurityException {
+    public void writeCrypt4GHKey(Writer writer, Key key, char[] password) throws IOException, GeneralSecurityException {
         Collection<String> keyLines = new ArrayList<>();
         boolean isPublic = key instanceof PublicKey;
         byte[] encodedKey = encodeKey(key);
@@ -403,7 +402,34 @@ public class KeyUtils {
             }
             keyLines.add(END_CRYPT4GH_ENCRYPTED_PRIVATE_KEY);
         }
-        FileUtils.writeLines(keyFile, keyLines);
+        IOUtils.writeLines(keyLines, null, writer);
+    }
+
+    /**
+     * Writes the key to a file in OpenSSL format.
+     *
+     * @param keyFile Key file to create.
+     * @param key     Key to write.
+     * @throws IOException If the file can't be written.
+     */
+    public void writeOpenSSLKey(File keyFile, Key key) throws IOException {
+        try (FileWriter fileWriter = new FileWriter(keyFile)) {
+            writeOpenSSLKey(fileWriter, key);
+        }
+    }
+
+    /**
+     * Writes the key to a file in Crypt4GH format.
+     *
+     * @param keyFile  Key file to create.
+     * @param key      Key to write.
+     * @param password Password to lock private key.
+     * @throws IOException If the file can't be written.
+     */
+    public void writeCrypt4GHKey(File keyFile, Key key, char[] password) throws IOException, GeneralSecurityException {
+        try (FileWriter fileWriter = new FileWriter(keyFile)) {
+            writeCrypt4GHKey(fileWriter, key, password);
+        }
     }
 
     private String decodeString(ByteBuffer byteBuffer) {
