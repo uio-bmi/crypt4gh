@@ -1,6 +1,7 @@
 # crypt4gh
 [![Build Status](https://github.com/uio-bmi/crypt4gh/workflows/Java%20CI/badge.svg)](https://github.com/uio-bmi/crypt4gh/actions)
 [![CodeFactor](https://www.codefactor.io/repository/github/uio-bmi/crypt4gh/badge/master)](https://www.codefactor.io/repository/github/uio-bmi/crypt4gh/overview/master)
+[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=uio-bmi/crypt4gh)](https://dependabot.com)
 [![Download](https://api.bintray.com/packages/uio-bmi/Crypt4GH/Crypt4GH/images/download.svg)](https://bintray.com/uio-bmi/Crypt4GH/Crypt4GH/_latestVersion)
 ## Overview
 ![](https://www.ga4gh.org/wp-content/uploads/Crypt4GH_comic.png)
