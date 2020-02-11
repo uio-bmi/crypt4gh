@@ -130,9 +130,7 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
         }
         long delta = newDecryptedPosition - currentDecryptedPosition;
         if (bytesRead + delta > buffer.length) {
-            long missingBytes = bytesRead + delta - buffer.length;
-            bytesRead += (delta - missingBytes);
-            return n - missingBytes;
+            delta = buffer.length - bytesRead;
         }
         bytesRead += delta;
         return n;
