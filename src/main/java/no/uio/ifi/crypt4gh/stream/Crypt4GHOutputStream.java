@@ -38,13 +38,11 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
         super(out);
         KeyUtils keyUtils = KeyUtils.getInstance();
         SecretKey dataKey = keyUtils.generateSessionKey();
-        DataEncryptionParameters dataEncryptionParameters = new ChaCha20IETFPoly1305EncryptionParameters(dataKey);
-        HeaderPacket headerPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(dataEncryptionParameters, writerPrivateKey, readerPublicKey);
+        this.dataEncryptionParameters = new ChaCha20IETFPoly1305EncryptionParameters(dataKey);
+        HeaderPacket headerPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(this.dataEncryptionParameters, writerPrivateKey, readerPublicKey);
         List<HeaderPacket> headerPackets = Collections.singletonList(headerPacket);
         this.header = new Header(headerPackets);
         out.write(header.serialize());
-        Collection<DataEncryptionParameters> dataEncryptionParametersList = header.getDataEncryptionParametersList();
-        this.dataEncryptionParameters = dataEncryptionParametersList.iterator().next();
     }
 
     /**
