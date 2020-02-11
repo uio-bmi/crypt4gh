@@ -138,7 +138,7 @@ public class Crypt4GHInputStream extends FilterInputStream {
                 return in.read();
             }
         }
-        return lengths.isEmpty() ? -1 : in.read();
+        return -1;
     }
 
     /**
