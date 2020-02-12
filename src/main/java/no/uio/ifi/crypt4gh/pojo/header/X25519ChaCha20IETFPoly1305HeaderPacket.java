@@ -48,7 +48,7 @@ public class X25519ChaCha20IETFPoly1305HeaderPacket extends HeaderPacket impleme
                 + 4                         // encryption method length
                 + 32                        // writer public key length
                 + NONCE_SIZE
-                + encryptedPayload.length   // encrypted payload length (with nonce and MAC)
+                + encryptedPayload.length
                 + MAC_SIZE;
     }
 
