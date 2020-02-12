@@ -53,8 +53,8 @@ sudo chmod +x "$PREFIX/crypt4gh"
 ## Usage
 ```
 $ crypt4gh 
-usage: crypt4gh [-d <arg> | -e <arg> | -g <arg> | -h | -v]    [-pk <arg>]
-       [-sk <arg>]
+usage: crypt4gh [-d <arg> | -e <arg> | -g <arg> | -h | -v]    [-kf <arg>]
+       [-kp <arg>] [-pk <arg>] [-sk <arg>]
 
 Crypt4GH encryption/decryption tool
 
@@ -62,6 +62,10 @@ Crypt4GH encryption/decryption tool
  -e,--encrypt <arg>    encrypt the file (specify file to encrypt)
  -g,--generate <arg>   generate key pair (specify desired key name)
  -h,--help             print this message
+ -kf,--keyform <arg>   key format to use for generated keys (OpenSSL or
+                       Crypt4GH)
+ -kp,--keypass <arg>   password for Crypt4GH private key (will be prompted
+                       afterwords if skipped)
  -pk,--pubkey <arg>    public key to use (specify key file)
  -sk,--seckey <arg>    secret key to use (specify key file)
  -v,--version          print application's version
