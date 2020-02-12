@@ -11,7 +11,10 @@ import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static no.uio.ifi.crypt4gh.pojo.body.Segment.UNENCRYPTED_DATA_SEGMENT_SIZE;
 
@@ -59,14 +62,12 @@ public class Crypt4GHOutputStream extends FilterOutputStream {
         super(out);
         KeyUtils keyUtils = KeyUtils.getInstance();
         SecretKey dataKey = keyUtils.generateSessionKey();
-        DataEncryptionParameters dataEncryptionParameters = new ChaCha20IETFPoly1305EncryptionParameters(dataKey);
-        HeaderPacket dataEncryptionParametersHeaderPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(dataEncryptionParameters, writerPrivateKey, readerPublicKey);
+        this.dataEncryptionParameters = new ChaCha20IETFPoly1305EncryptionParameters(dataKey);
+        HeaderPacket dataEncryptionParametersHeaderPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(this.dataEncryptionParameters, writerPrivateKey, readerPublicKey);
         HeaderPacket dataEditListHeaderPacket = new X25519ChaCha20IETFPoly1305HeaderPacket(dataEditList, writerPrivateKey, readerPublicKey);
         List<HeaderPacket> headerPackets = new ArrayList<>(List.of(dataEncryptionParametersHeaderPacket, dataEditListHeaderPacket));
         this.header = new Header(headerPackets);
         out.write(header.serialize());
-        Collection<DataEncryptionParameters> dataEncryptionParametersList = header.getDataEncryptionParametersList();
-        this.dataEncryptionParameters = dataEncryptionParametersList.iterator().next();
     }
 
     /**
