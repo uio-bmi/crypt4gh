@@ -300,7 +300,7 @@ public class KeyUtils {
         byteBuffer.get(new byte[CRYPT4GH_AUTH_MAGIC.length()]);
         KDF kdf = KDF.valueOf(decodeString(byteBuffer).toUpperCase());
         int rounds = 0;
-        byte[] salt = new byte[0];
+        byte[] salt = new byte[]{};
         if (kdf != KDF.NONE) {
             if (password == null) {
                 throw new IllegalArgumentException("Private key is password-protected, need a password for decryption");
@@ -311,8 +311,8 @@ public class KeyUtils {
             salt = decodeArray(byteBuffer, saltLength);
         }
         Cipher cipher = Cipher.valueOf(decodeString(byteBuffer).toUpperCase());
-        short keyLength = byteBuffer.getShort();
-        byte[] payload = decodeArray(byteBuffer, keyLength);
+        short payloadLength = byteBuffer.getShort();
+        byte[] payload = decodeArray(byteBuffer, payloadLength);
         if (kdf == KDF.NONE) {
             if (cipher != Cipher.NONE) {
                 throw new GeneralSecurityException("Invalid private key: KDF is 'none', but cipher is not 'none");
