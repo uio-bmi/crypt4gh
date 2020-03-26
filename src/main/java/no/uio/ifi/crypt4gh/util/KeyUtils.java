@@ -281,7 +281,7 @@ public class KeyUtils {
         byte[] decodedKey = decodeKey(keyMaterial);
         try {
             return keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decodedKey));
-        } catch (InvalidKeySpecException e) {
+        } catch (InvalidKeySpecException | IllegalArgumentException e) {
             return readCrypt4GHPrivateKey(decodedKey, password);
         }
     }
