@@ -2,18 +2,21 @@ name: Java CI
 
 on:
   push:
-    branches:
-      - '*'
 
 jobs:
 
   build:
 
-    runs-on: macOS-latest
+    runs-on: ubuntu-latest
 
     steps:
 
       - uses: actions/checkout@v1
+
+      - name: Install and run rng-tools
+        run: |
+          sudo apt-get install rng-tools
+          sudo rngd -r /dev/urandom
 
       - name: Set up JDK 13
         uses: actions/setup-java@v1
