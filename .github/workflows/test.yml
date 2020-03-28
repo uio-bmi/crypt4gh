@@ -2,8 +2,6 @@ name: Java CI
 
 on:
   push:
-    branches:
-      - '*'
 
 jobs:
 
