@@ -15,10 +15,8 @@ jobs:
 
       - uses: actions/checkout@v1
 
-      - name: Install and run rng-tools
-        run: |
-          sudo apt-get install rng-tools
-          sudo rngd -r /dev/urandom
+      - name: Install haveged
+        run: sudo apt-get install haveged
 
       - name: Set up JDK 13
         uses: actions/setup-java@v1
