@@ -192,9 +192,9 @@
 
     <distributionManagement>
         <repository>
-            <id>bintray-uio-bmi-Crypt4GH</id>
+            <id>github</id>
             <name>uio-bmi-Crypt4GH</name>
-            <url>https://api.bintray.com/maven/uio-bmi/Crypt4GH/Crypt4GH/;publish=1</url>
+            <url>https://maven.pkg.github.com/uio-bmi/crypt4gh</url>
         </repository>
     </distributionManagement>
 
