@@ -31,15 +31,60 @@ To include this library to your Maven project add following to the `pom.xml`:
 
     <repositories>
         <repository>
-            <id>central</id>
-            <name>bintray</name>
-            <url>https://jcenter.bintray.com</url>
+            <id>github</id>
+            <name>uio-bmi-Crypt4GH</name>
+            <url>https://maven.pkg.github.com/uio-bmi/crypt4gh</url>
         </repository>
     </repositories>
 
 ...
 
 ```
+
+In addition ensure that your settings.xml includes the required github credentials following the [github docs](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry). Here's an example:
+
+```xml
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                      http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <activeProfiles>
+    <activeProfile>github</activeProfile>
+  </activeProfiles>
+  <servers>
+    <server>
+      <id>github</id>
+      <username>my_username</username>
+      <password>A_read_token_created_according_to_github_doc</password>
+    </server>
+  </servers>
+  <profiles>
+    <profile>
+      <id>github</id>
+      <repositories>
+        <repository>
+          <id>central</id>
+          <url>https://repo1.maven.org/maven2</url>
+        </repository>
+
+        <repository>
+          <id>github</id>
+          <name>uio-bmi-crypt4gh</name>
+          <url>https://maven.pkg.github.com/uio-bmi/crypt4gh/</url>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+
+      </repositories>
+    </profile>
+  </profiles>
+
+
+</settings>
+```
+
 
 ## Console Installation
 To install console app you can use the following script (assuming you are using `bash`):
