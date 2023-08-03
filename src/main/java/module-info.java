@@ -11,8 +11,5 @@ module no.uio.ifi.crypt4gh {
 
     exports no.uio.ifi.crypt4gh.stream;
     exports no.uio.ifi.crypt4gh.pojo;
-    exports no.uio.ifi.crypt4gh.pojo.header;
-    exports no.uio.ifi.crypt4gh.pojo.body;
-    exports no.uio.ifi.crypt4gh.pojo.key;
     exports no.uio.ifi.crypt4gh.util;
 }
