@@ -42,17 +42,14 @@
         <developer>
             <name>Dmytro Titov</name>
         </developer>
-        <developer>
-            <name>Roman Valls Guimera</name>
-        </developer>
     </developers>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>11</java.version>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
     <dependencies>
@@ -127,16 +124,16 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.3.0</version>
-<!--                <configuration>-->
-<!--                    <archive>-->
-<!--                        <manifest>-->
-<!--                            <mainClass>no.uio.ifi.crypt4gh.app.Main</mainClass>-->
-<!--                            <addDefaultImplementationEntries>-->
-<!--                                true-->
-<!--                            </addDefaultImplementationEntries>-->
-<!--                        </manifest>-->
-<!--                    </archive>-->
-<!--                </configuration>-->
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>no.uio.ifi.crypt4gh.app.Main</mainClass>
+                            <addDefaultImplementationEntries>
+                                true
+                            </addDefaultImplementationEntries>
+                        </manifest>
+                    </archive>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
