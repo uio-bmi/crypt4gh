@@ -421,7 +421,6 @@ public class Crypt4GHTests {
 
             IOUtils.copy(crypt4GHInputStream, decryptedOutputStream);
             Assert.assertEquals(0, decryptedFile.length());
-            System.out.println(decryptedFile.toString());
         }
     }
 
