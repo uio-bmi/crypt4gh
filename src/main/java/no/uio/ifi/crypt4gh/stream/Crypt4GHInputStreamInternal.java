@@ -71,7 +71,11 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
         if (buffer == null || buffer.length == bytesRead) {
             fillBuffer();
         }
-        return buffer[bytesRead++];
+        if (buffer.length == 0) {
+            return -1;
+        } else {
+            return buffer[bytesRead++];
+        }
     }
 
     /**

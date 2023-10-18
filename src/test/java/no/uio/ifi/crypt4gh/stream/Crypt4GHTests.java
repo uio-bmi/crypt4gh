@@ -400,4 +400,29 @@ public class Crypt4GHTests {
         }
     }
 
+    /**
+     * Tests decryption of an empty file created by the 'crypt4gh' command line tool.
+     *
+     * The test file was created by creating an empty file and executing:
+     *
+     * crypt4gh encrypt -f empty.txt -p reader.pub.pem -s writer.sec.pem
+     *
+     * @throws Exception In case something fails.
+     */
+    @Test
+    public void emptyContentDecryptionTest() throws Exception {
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec.pem")).getFile()), null);
+
+        File encryptedFile = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("empty.txt.c4gh")).getFile());
+        File decryptedFile = Files.createTempFile("test", "dec").toFile();
+        try (FileInputStream encryptedInputStream = new FileInputStream(encryptedFile);
+             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(encryptedInputStream, readerPrivateKey);
+             FileOutputStream decryptedOutputStream = new FileOutputStream(decryptedFile)) {
+
+            IOUtils.copy(crypt4GHInputStream, decryptedOutputStream);
+            Assert.assertEquals(0, decryptedFile.length());
+            System.out.println(decryptedFile.toString());
+        }
+    }
+
 }
