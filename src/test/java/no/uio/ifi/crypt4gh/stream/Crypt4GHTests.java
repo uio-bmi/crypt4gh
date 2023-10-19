@@ -401,19 +401,33 @@ public class Crypt4GHTests {
     }
 
     /**
-     * Tests decryption of an empty file created by the 'crypt4gh' command line tool.
-     *
-     * The test file was created by creating an empty file and executing:
-     *
-     * crypt4gh encrypt -f empty.txt -p reader.pub.pem -s writer.sec.pem
+     * Tests decryption of empty content created by the <a href="https://github.com/neicnordic/crypt4gh">Go implementation</a> of `crypt4gh` and OpenSSL keys.
      *
      * @throws Exception In case something fails.
      */
     @Test
-    public void emptyContentDecryptionTest() throws Exception {
+    public void decryptEmptyContentFromGoImplementationTest() throws Exception {
         PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec.pem")).getFile()), null);
+        File encryptedFile = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("empty.go.txt.c4gh")).getFile());
+        File decryptedFile = Files.createTempFile("test", "dec").toFile();
+        try (FileInputStream encryptedInputStream = new FileInputStream(encryptedFile);
+             Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(encryptedInputStream, readerPrivateKey);
+             FileOutputStream decryptedOutputStream = new FileOutputStream(decryptedFile)) {
 
-        File encryptedFile = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("empty.txt.c4gh")).getFile());
+            IOUtils.copy(crypt4GHInputStream, decryptedOutputStream);
+            Assert.assertEquals(0, decryptedFile.length());
+        }
+    }
+
+    /**
+     * Tests decryption of empty content created by the <a href="https://github.com/CSCfi/crypt4gh-gui">Python GUI implementation</a> of `crypt4gh` and Crypt4GH keys.
+     *
+     * @throws Exception In case something fails.
+     */
+    @Test
+    public void decryptEmptyContentFromPythonImplementationTest() throws Exception {
+        PrivateKey readerPrivateKey = keyUtils.readPrivateKey(new File(Objects.requireNonNull(getClass().getClassLoader().getResource("reader.sec")).getFile()), "password".toCharArray());
+        File encryptedFile = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("empty.python.txt.c4gh")).getFile());
         File decryptedFile = Files.createTempFile("test", "dec").toFile();
         try (FileInputStream encryptedInputStream = new FileInputStream(encryptedFile);
              Crypt4GHInputStream crypt4GHInputStream = new Crypt4GHInputStream(encryptedInputStream, readerPrivateKey);
