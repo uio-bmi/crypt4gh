@@ -1,8 +1,6 @@
 # crypt4gh
 [![Build Status](https://github.com/uio-bmi/crypt4gh/workflows/Java%20CI/badge.svg)](https://github.com/uio-bmi/crypt4gh/actions)
-[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=uio-bmi/crypt4gh)](https://dependabot.com)
 [![CodeFactor](https://www.codefactor.io/repository/github/uio-bmi/crypt4gh/badge/master)](https://www.codefactor.io/repository/github/uio-bmi/crypt4gh/overview/master)
-[![Download](https://api.bintray.com/packages/uio-bmi/Crypt4GH/Crypt4GH/images/download.svg)](https://bintray.com/uio-bmi/Crypt4GH/Crypt4GH/_latestVersion)
 ## Overview
 ![](https://www.ga4gh.org/wp-content/uploads/Crypt4GH_comic.png)
 
@@ -90,7 +88,7 @@ In addition ensure that your settings.xml includes the required github credentia
 To install console app you can use the following script (assuming you are using `bash`):
 ```
 PREFIX=/usr/local/bin && \
-sudo curl -L "https://github.com/uio-bmi/crypt4gh/releases/download/v2.4.1/crypt4gh.jar" -o "$PREFIX/crypt4gh.jar" && \
+sudo curl -L "https://github.com/uio-bmi/crypt4gh/releases/download/v2.4.8/crypt4gh.jar" -o "$PREFIX/crypt4gh.jar" && \
 echo -e '#!/usr/bin/env bash\njava -jar' "$PREFIX/crypt4gh.jar" '$@' | sudo tee "$PREFIX/crypt4gh" > /dev/null && \
 sudo chmod +x "$PREFIX/crypt4gh"
 ```
