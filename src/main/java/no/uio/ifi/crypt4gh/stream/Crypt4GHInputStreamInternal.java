@@ -71,7 +71,11 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
         if (buffer == null || buffer.length == bytesRead) {
             fillBuffer();
         }
-        return buffer[bytesRead++];
+        if (buffer == null || buffer.length == 0) {
+            return -1;
+        } else {
+            return buffer[bytesRead++];
+        }
     }
 
     /**
@@ -147,10 +151,10 @@ class Crypt4GHInputStreamInternal extends FilterInputStream {
     private synchronized void fillBuffer() throws IOException {
         try {
             byte[] encryptedSegmentBytes = in.readNBytes(encryptedSegmentSize);
-            if (encryptedSegmentBytes.length == 0) {
-                Arrays.fill(buffer, -1);
-            } else {
+            if (encryptedSegmentBytes.length > 0) {
                 decryptSegment(encryptedSegmentBytes);
+            } else if (buffer != null) {
+                Arrays.fill(buffer, -1);
             }
             bytesRead = 0;
         } catch (GeneralSecurityException e) {
