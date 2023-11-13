@@ -2,10 +2,10 @@ module no.uio.ifi.crypt4gh {
     requires blake2b;
     requires org.apache.commons.lang3;
     requires org.apache.commons.io;
+    requires org.apache.commons.cli;
     requires bcrypt;
     requires scrypt;
     requires bkdf;
-    requires commons.cli;
     requires org.slf4j;
     requires lombok;
 
