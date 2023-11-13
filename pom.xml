@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>no.uio.ifi</groupId>
+    <groupId>no.elixir</groupId>
     <artifactId>crypt4gh</artifactId>
-    <version>2.5.0</version>
+    <version>3.0.0</version>
     <packaging>jar</packaging>
 
     <name>crypt4gh</name>
@@ -137,7 +137,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>no.uio.ifi.crypt4gh.app.Main</mainClass>
+                            <mainClass>no.elixir.crypt4gh.app.Main</mainClass>
                             <addDefaultImplementationEntries>
                                 true
                             </addDefaultImplementationEntries>
@@ -160,7 +160,7 @@
                             <transformers>
                                 <transformer implementation=
                                                      "org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>no.uio.ifi.crypt4gh.app.Main</mainClass>
+                                    <mainClass>no.elixir.crypt4gh.app.Main</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>
