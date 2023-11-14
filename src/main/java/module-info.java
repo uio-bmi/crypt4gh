@@ -1,5 +1,5 @@
 module no.elixir.crypt4gh {
-    requires blake2b;
+    requires com.rfksystems.blake2b;
     requires org.apache.commons.lang3;
     requires org.apache.commons.io;
     requires org.apache.commons.cli;
