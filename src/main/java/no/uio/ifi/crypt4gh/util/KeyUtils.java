@@ -36,18 +36,37 @@ import static no.uio.ifi.crypt4gh.pojo.header.X25519ChaCha20IETFPoly1305HeaderPa
  */
 public class KeyUtils {
 
+    /** A constant string with the value "ChaCha20" */
     public static final String CHA_CHA_20 = "ChaCha20";
+
+    /** A constant string with the value "X25519" */
     public static final String X25519 = "X25519";
 
+    /** Header line text for public key file in OpenSSL format */
     public static final String BEGIN_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----";
+
+    /** Footer line text for public key file in OpenSSL format */
     public static final String END_PUBLIC_KEY = "-----END PUBLIC KEY-----";
+
+    /** Header line text for private key file in OpenSSL format */
     public static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
+
+    /** Footer line text for private key file in OpenSSL format */
     public static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
+
+    /** Header line text for public key file in Crypt4GH format */
     public static final String BEGIN_CRYPT4GH_PUBLIC_KEY = "-----BEGIN CRYPT4GH PUBLIC KEY-----";
+
+    /** Footer line text for public key file in Crypt4GH format */
     public static final String END_CRYPT4GH_PUBLIC_KEY = "-----END CRYPT4GH PUBLIC KEY-----";
+
+    /** Header line text for private key file in Crypt4GH format */
     public static final String BEGIN_CRYPT4GH_ENCRYPTED_PRIVATE_KEY = "-----BEGIN CRYPT4GH ENCRYPTED PRIVATE KEY-----";
+
+    /** Footer line text for private key file in Crypt4GH format */
     public static final String END_CRYPT4GH_ENCRYPTED_PRIVATE_KEY = "-----END CRYPT4GH ENCRYPTED PRIVATE KEY-----";
 
+    /** Magic number string used at the beginning of private key files in Crypt4GH format */
     public static final String CRYPT4GH_AUTH_MAGIC = "c4gh-v1";
 
     private static KeyUtils ourInstance = new KeyUtils();
@@ -371,6 +390,7 @@ public class KeyUtils {
      * @param key      Key to write.
      * @param password Password to lock private key.
      * @throws IOException If the file can't be written.
+     * @throws GeneralSecurityException If the key was not XECPublicKey or XECPrivateKey.
      */
     public void writeCrypt4GHKey(Writer writer, Key key, char[] password) throws IOException, GeneralSecurityException {
         Collection<String> keyLines = new ArrayList<>();
@@ -425,6 +445,7 @@ public class KeyUtils {
      * @param key      Key to write.
      * @param password Password to lock private key.
      * @throws IOException If the file can't be written.
+     * @throws GeneralSecurityException If the key was not XECPublicKey or XECPrivateKey.
      */
     public void writeCrypt4GHKey(File keyFile, Key key, char[] password) throws IOException, GeneralSecurityException {
         try (FileWriter fileWriter = new FileWriter(keyFile)) {
