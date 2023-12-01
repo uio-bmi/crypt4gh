@@ -1,1 +1,1 @@
-moduleSearchIndex = [];updateSearchResults();
+moduleSearchIndex = [{"l":"no.uio.ifi.crypt4gh"}];updateSearchResults();

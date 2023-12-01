@@ -1,7 +1,4 @@
-no.uio.ifi.crypt4gh.app
+module:no.uio.ifi.crypt4gh
 no.uio.ifi.crypt4gh.pojo
-no.uio.ifi.crypt4gh.pojo.body
-no.uio.ifi.crypt4gh.pojo.header
-no.uio.ifi.crypt4gh.pojo.key
 no.uio.ifi.crypt4gh.stream
 no.uio.ifi.crypt4gh.util
