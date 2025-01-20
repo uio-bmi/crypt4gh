@@ -38,7 +38,7 @@ public enum KDF {
             case BCRYPT:
                 return BKDF.createKdf().derive(salt, password, (int) (Math.log(rounds) / Math.log(2)), null, KEY_LENGTH);
             case PBKDF2_HMAC_SHA256:
-                KeySpec spec = new PBEKeySpec(password, salt, rounds, KEY_LENGTH);
+                KeySpec spec = new PBEKeySpec(password, salt, rounds, KEY_LENGTH*8);
                 SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF_2_WITH_HMAC_SHA_256);
                 return factory.generateSecret(spec).getEncoded();
             case NONE:
